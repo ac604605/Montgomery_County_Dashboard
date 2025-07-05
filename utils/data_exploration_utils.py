@@ -1,3 +1,6 @@
+import pandas as pd
+from typing import Dict, Any
+
 # ================================
 # SPECIALIZED ITEM TYPE ANALYSIS
 # ================================
@@ -1030,7 +1033,8 @@ def explore_like_a_real_analyst(df: pd.DataFrame) -> None:
             print(f"{i}. {rec}")
             
     except Exception as e:
-        print(f"Error in explore_like_a_real_analyst: {str(e)}")"""
+        print(f"Error in explore_like_a_real_analyst: {str(e)}")
+        """
 Data Exploration and Cleaning Utilities Module (Enhanced Version)
 
 This module provides comprehensive functions for data exploration, validation, 
