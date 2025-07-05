@@ -258,7 +258,7 @@ def investigate_item_type_patterns(df: pd.DataFrame, n_examples: int = 5,
             if supplier_col:
                 missing_suppliers = subset[supplier_col].isnull().sum()
                 if missing_suppliers > 0:
-                    print(f"⚠️  Missing suppliers: {missing_suppliers} ({missing_suppliers/len(subset)*100:.1f}%)")
+                    print(f"Missing suppliers: {missing_suppliers} ({missing_suppliers/len(subset)*100:.1f}%)")
                     
                     # Show examples without suppliers
                     if desc_col:
@@ -287,7 +287,7 @@ def investigate_item_type_patterns(df: pd.DataFrame, n_examples: int = 5,
                                 found_keywords.append(f"{keyword}({count})")
                     
                     if found_keywords:
-                        print(f"🔍 Potentially miscategorized items found: {', '.join(found_keywords)}")
+                        print(f"Potentially miscategorized items found: {', '.join(found_keywords)}")
                         
                 except Exception as e:
                     print(f"  Could not analyze descriptions: {str(e)}")
@@ -429,23 +429,23 @@ deu.explore_like_a_real_analyst(df)
 
 KEY IMPROVEMENTS IN v2.0:
 ------------------------
-✅ Added error handling throughout
-✅ Column existence validation
-✅ Memory usage warnings for large datasets
-✅ Implemented missing dictionary strategy in handle_missing_values()
-✅ Added type hints for better IDE support
-✅ Output limiting to prevent console overflow
-✅ Adaptive column detection for item type analysis
+Added error handling throughout
+Column existence validation
+Memory usage warnings for large datasets
+Implemented missing dictionary strategy in handle_missing_values()
+Added type hints for better IDE support
+Output limiting to prevent console overflow
+Adaptive column detection for item type analysis
 
 MAIN FUNCTIONS BY CATEGORY:
 --------------------------
 
-📊 UNIVERSAL VALIDATION:
+UNIVERSAL VALIDATION:
   validate_dataframe(df) - Comprehensive validation with report
   basic_data_exploration(df) - Quick overview
   explore_like_a_real_analyst(df) - Complete professional process
 
-🧹 SYSTEMATIC CLEANING:
+SYSTEMATIC CLEANING:
   run_phase_1_2_cleaning(df, name) - Full cleaning pipeline
   document_raw_data(df, name) - Initial assessment
   analyze_missing_patterns(df, name) - Missing value analysis
@@ -453,14 +453,14 @@ MAIN FUNCTIONS BY CATEGORY:
     Strategies: 'drop_rows', 'drop_cols', 'flag_only'
     Dict strategies: {'col': 'fill_mean'/'fill_median'/'fill_mode'/etc}
 
-🔍 SPECIALIZED ANALYSIS:
+SPECIALIZED ANALYSIS:
   For datasets with categories/item types:
   - show_examples_by_item_type_simple(df, item_col='ITEM TYPE')
   - analyze_item_types_detailed(df, item_col='ITEM TYPE')
   - investigate_item_type_patterns(df)
   - compare_item_types_summary(df) -> Returns DataFrame
 
-🕵️ MANUAL INVESTIGATION:
+MANUAL INVESTIGATION:
   manual_column_investigation(df) - Column-by-column analysis
   investigate_missing_values_manually(df) - Missing pattern detective work
   spot_anomalies_manually(df) - Find data quality issues
@@ -556,10 +556,10 @@ TIPS:
 # ================================
 
 if __name__ == "__main__":
-    print("✅ Data Exploration and Cleaning Utilities Module v2.0 Loaded Successfully!")
-    print("📚 Call print_module_usage() for comprehensive usage guide")
-    print("🚀 Start with: validate_dataframe(your_df) for any dataset")
-    print("\n🆕 New in v2.0: Enhanced error handling, column validation, and missing value strategies")# ================================
+    print("Data Exploration and Cleaning Utilities Module v2.0 Loaded Successfully!")
+    print("Call print_module_usage() for comprehensive usage guide")
+    print("Start with: validate_dataframe(your_df) for any dataset")
+    print("\nNew in v2.0: Enhanced error handling, column validation, and missing value strategies")# ================================
 # SPECIALIZED EXPLORATION FUNCTIONS
 # ================================
 
@@ -671,9 +671,9 @@ def manual_column_investigation(df: pd.DataFrame, max_cols: int = None) -> None:
                 if pd.api.types.is_numeric_dtype(df[col]):
                     print(f"Range: {df[col].min()} to {df[col].max()}")
                     if (df[col] < 0).any():
-                        print("⚠️  Contains negative values")
+                        print("Contains negative values")
                     if (df[col] == 0).sum() > len(df) * 0.1:
-                        print(f"⚠️  Contains {(df[col] == 0).sum():,} zeros ({(df[col] == 0).sum()/len(df)*100:.1f}%)")
+                        print(f"Contains {(df[col] == 0).sum():,} zeros ({(df[col] == 0).sum()/len(df)*100:.1f}%)")
                 
             except Exception as e:
                 print(f"  Error analyzing column: {str(e)}")
@@ -729,7 +729,7 @@ def investigate_missing_values_manually(df: pd.DataFrame,
         print(f"Columns with missing values: {missing_cols}")
         
         for col in missing_cols:
-            print(f"\n🔍 Investigating {col}:")
+            print(f"\nInvestigating {col}:")
             missing_count = df[col].isnull().sum()
             print(f"Missing count: {missing_count:,} ({missing_count/len(df)*100:.1f}%)")
             
@@ -761,7 +761,7 @@ def investigate_missing_values_manually(df: pd.DataFrame,
                         continue
         
         # Check for rows with multiple missing values
-        print("\n🔍 Checking for rows with multiple missing values:")
+        print("\nChecking for rows with multiple missing values:")
         missing_counts_per_row = df.isnull().sum(axis=1)
         multi_missing = missing_counts_per_row[missing_counts_per_row > 1]
         
@@ -807,7 +807,7 @@ def spot_anomalies_manually(df: pd.DataFrame,
         print("="*50)
         
         # Check for suspicious patterns
-        print("🔍 Looking for suspicious patterns:")
+        print("Looking for suspicious patterns:")
         
         # Numeric columns with zeros
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -826,7 +826,7 @@ def spot_anomalies_manually(df: pd.DataFrame,
                         suspicious_rounds = [val for val in round_numbers.index 
                                            if val % 100 == 0 or val % 1000 == 0]
                         if suspicious_rounds:
-                            print(f"    ⚠️  Suspicious round numbers: {suspicious_rounds}")
+                            print(f"   Suspicious round numbers: {suspicious_rounds}")
                 except Exception:
                     continue
         
@@ -836,7 +836,7 @@ def spot_anomalies_manually(df: pd.DataFrame,
             print("\nText columns analysis:")
             for i, col in enumerate(text_cols[:text_sample]):
                 try:
-                    print(f"\n🔍 Examining {col} for patterns:")
+                    print(f"\nExamining {col} for patterns:")
                     
                     # Look at length distribution
                     non_null = df[col].dropna()
@@ -846,14 +846,14 @@ def spot_anomalies_manually(df: pd.DataFrame,
                         
                         # Check for suspicious patterns
                         if lengths.min() == lengths.max():
-                            print(f"  ⚠️  All values have same length ({lengths.min()})")
+                            print(f" All values have same length ({lengths.min()})")
                         
                         # Look for placeholder values
                         placeholders = ['N/A', 'NA', 'NULL', 'None', 'TBD', 'XXX', 'Test', 'test']
                         for placeholder in placeholders:
                             count = non_null.astype(str).str.contains(placeholder, case=False, na=False).sum()
                             if count > 0:
-                                print(f"  ⚠️  Found {count:,} values containing '{placeholder}'")
+                                print(f" Found {count:,} values containing '{placeholder}'")
                         
                         # Sample some values
                         print(f"  Sample values: {non_null.head(3).tolist()}")
@@ -1749,7 +1749,7 @@ def fix_data_types(df: pd.DataFrame,
                 else:
                     df_clean[col] = df_clean[col].astype(target_type)
                 
-                print(f"  ✓ {col}: {original_type} → {df_clean[col].dtype}")
+                print(f" {col}: {original_type}{df_clean[col].dtype}")
                 
                 # Report any conversion issues
                 if target_type in ['datetime', 'numeric']:
@@ -1758,9 +1758,9 @@ def fix_data_types(df: pd.DataFrame,
                         print(f"    Warning: {new_nulls} values could not be converted")
                 
             except Exception as e:
-                print(f"  ✗ ERROR converting {col}: {str(e)}")
+                print(f" ERROR converting {col}: {str(e)}")
         else:
-            print(f"  ✗ Column '{col}' not found in DataFrame")
+            print(f" Column '{col}' not found in DataFrame")
     
     return df_clean
 
