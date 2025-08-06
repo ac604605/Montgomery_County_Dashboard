@@ -252,7 +252,7 @@ class EnhancedWineClassificationSystem:
             r'\bARGENTINE\b': 'Argentina', r'\bARGENTINA\b': 'Argentina',
             r'\bMENDOZA\b': 'Argentina', r'\bSALTA\b': 'Argentina', r'\bSAN JUAN\b': 'Argentina',
             r'\bLA RIOJA\b': 'Argentina', r'\bNEUQUEN\b': 'Argentina', r'\bMAIPU\b': 'Argentina',
-            r'\bCATE
+            r'\bCATE\b': 'Argentina',
 '
         }
         
