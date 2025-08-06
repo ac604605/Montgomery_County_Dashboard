@@ -143,4 +143,4 @@ def quick_help():
     print("show_help()                   # This complete help guide")
 
 # Display on import
-print("📚 Utility functions loaded! Type 'show_help()' for complete guide or 'quick_help()' for shortcuts.")
+print("Utility functions loaded! Type 'show_help()' for complete guide or 'quick_help()' for shortcuts.")
