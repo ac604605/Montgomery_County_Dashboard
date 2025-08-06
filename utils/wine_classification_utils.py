@@ -253,7 +253,6 @@ class EnhancedWineClassificationSystem:
             r'\bMENDOZA\b': 'Argentina', r'\bSALTA\b': 'Argentina', r'\bSAN JUAN\b': 'Argentina',
             r'\bLA RIOJA\b': 'Argentina', r'\bNEUQUEN\b': 'Argentina', r'\bMAIPU\b': 'Argentina',
             r'\bCATE\b': 'Argentina',
-'
         }
         
         # Greek and Eastern European patterns
