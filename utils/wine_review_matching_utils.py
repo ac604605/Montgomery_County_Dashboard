@@ -132,7 +132,7 @@ class ColumnValidator:
     
     def print_column_mapping(self, sales_map: Dict[str, str], review_map: Dict[str, str]):
         """Print the column mapping for verification"""
-        print("✅ Column Mapping Detected:")
+        print(" Column Mapping Detected:")
         print("Sales Data:")
         for key, actual in sales_map.items():
             print(f"  {key} -> '{actual}'")
@@ -276,14 +276,14 @@ def print_progress_update(processed, total, matched_count, cache_hits, start_tim
         print(f"\n{'='*60}")
         print(f"🍷 PROGRESS UPDATE - {processed:,}/{total:,} wines ({processed/total*100:.1f}%)")
         print(f"{'='*60}")
-        print(f"✅ Matches found: {matched_count:,} ({match_rate:.1f}%)")
-        print(f"🚀 Cache efficiency: {cache_rate:.1f}%")
+        print(f" Matches found: {matched_count:,} ({match_rate:.1f}%)")
+        print(f" Cache efficiency: {cache_rate:.1f}%")
         print(f"⚡ Processing speed: {wines_per_minute:.0f} wines/minute")
         print(f"⏱️  Elapsed time: {str(timedelta(seconds=int(elapsed)))}")
-        print(f"🎯 ETA to completion: {eta}")
+        print(f" ETA to completion: {eta}")
         
         if remaining > 0:
-            print(f"📊 Estimated total time: {str(timedelta(seconds=int(elapsed + eta_seconds)))}")
+            print(f" Estimated total time: {str(timedelta(seconds=int(elapsed + eta_seconds)))}")
         print(f"{'='*60}\n")
 
 
@@ -311,10 +311,10 @@ def match_wines_to_reviews(sales_df, wine_review_data, threshold=0.6,
         sales_map, review_map = validator.validate_and_map_columns(sales_df, wine_review_data)
         validator.print_column_mapping(sales_map, review_map)
     except ValueError as e:
-        print(f"❌ Column validation failed: {e}")
+        print(f" Column validation failed: {e}")
         return None, None, None
     
-    print(f"📊 Dataset Info:")
+    print(f" Dataset Info:")
     print(f"  Sales data: {len(sales_df):,} total rows")
     print(f"  Wine reviews: {len(wine_review_data):,} rows")
     print(f"  Matching threshold: {threshold}")
@@ -329,7 +329,7 @@ def match_wines_to_reviews(sales_df, wine_review_data, threshold=0.6,
         wine_sales = wine_sales.head(max_test_rows)
         print(f"🧪 TEST MODE: Processing {len(wine_sales):,} wines")
     else:
-        print(f"🚀 FULL MODE: Processing {len(wine_sales):,} wines")
+        print(f" FULL MODE: Processing {len(wine_sales):,} wines")
     
     # Step 3: Initialize new columns for wine review data
     for col_key, actual_col in review_map.items():
@@ -352,7 +352,7 @@ def match_wines_to_reviews(sales_df, wine_review_data, threshold=0.6,
     total_wines = len(wine_sales)
     
     print(f"\n🏁 Starting matching process...")
-    print(f"📈 Progress updates every {progress_interval:,} wines")
+    print(f" Progress updates every {progress_interval:,} wines")
     
     # Step 5: Process each wine
     item_desc_col = sales_map['item_description']
@@ -407,7 +407,7 @@ def match_wines_to_reviews(sales_df, wine_review_data, threshold=0.6,
     print(f"\n{'='*60}")
     print("🏆 WINE REVIEW MATCHING COMPLETE!")
     print(f"{'='*60}")
-    print(f"📊 Final Statistics:")
+    print(f" Final Statistics:")
     print(f"  Wines processed: {len(wine_sales):,}")
     print(f"  Matches found: {matched_count:,} ({final_match_rate:.1f}%)")
     print(f"  Cache efficiency: {(cache_hits/len(wine_sales)*100):.1f}%")
@@ -442,7 +442,7 @@ def run_wine_review_matching(sales_df, wine_review_data, threshold=0.6, test_mod
             progress_interval=progress_interval
         )
     else:
-        print("🚀 Running FULL wine review matching...")
+        print(" Running FULL wine review matching...")
         return match_wines_to_reviews(
             sales_df, wine_review_data,
             threshold=threshold,
@@ -476,16 +476,16 @@ def display_sample_matches(results_df, num_samples=5):
         num_samples: Number of samples to display
     """
     if results_df is None:
-        print("❌ No results to display - matching may have failed")
+        print(" No results to display - matching may have failed")
         return
     
     matched = results_df[results_df['REVIEW_MATCH_STATUS'] == 'MATCHED']
     
     if len(matched) == 0:
-        print("❌ No matches found in results")
+        print(" No matches found in results")
         return
     
-    print(f"\n📋 Sample Matches ({min(num_samples, len(matched))} of {len(matched):,} total):")
+    print(f"\n Sample Matches ({min(num_samples, len(matched))} of {len(matched):,} total):")
     print("="*80)
     
     # Define columns to display (only if they exist)
@@ -511,7 +511,7 @@ def display_sample_matches(results_df, num_samples=5):
 # Quick test function for development
 def quick_test(sales_df, review_df, num_wines=100):
     """Quick test function for development/debugging"""
-    print(f"🔧 Quick Test Mode - Processing {num_wines} wines...")
+    print(f" Quick Test Mode - Processing {num_wines} wines...")
     return match_wines_to_reviews(
         sales_df, review_df,
         threshold=0.6,

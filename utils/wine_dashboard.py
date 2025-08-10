@@ -135,7 +135,7 @@ def main():
     df = load_data()
     
     # SIMPLE SIDEBAR FILTERS - NO COMPLEX LOGIC
-    st.sidebar.header("📊 Filters")
+    st.sidebar.header(" Filters")
     
     # Year filter
     years = sorted(df['YEAR'].unique())
@@ -232,13 +232,13 @@ def main():
         chart_df = chart_df[chart_df['review_country'].isin(selected_countries)]
     
     # Show results
-    st.write(f"📊 **Table Data:** {len(filtered_df):,} records | **Chart Data:** {len(chart_df):,} records | **Total:** {len(df):,}")
-    st.info("💡 **Charts show more complete data** (ignoring supplier limits) while **table/metrics use filtered data** for focused analysis")
+    st.write(f" **Table Data:** {len(filtered_df):,} records | **Chart Data:** {len(chart_df):,} records | **Total:** {len(df):,}")
+    st.info(" **Charts show more complete data** (ignoring supplier limits) while **table/metrics use filtered data** for focused analysis")
     
     # DEBUG SECTION - Show what's missing
     missing_count = len(df) - len(filtered_df)
     if missing_count > 0:
-        st.expander_debug = st.expander(f"🔍 Debug: What happened to the missing {missing_count:,} records?")
+        st.expander_debug = st.expander(f" Debug: What happened to the missing {missing_count:,} records?")
         with st.expander_debug:
             
             # Check each filter to see what's being excluded
