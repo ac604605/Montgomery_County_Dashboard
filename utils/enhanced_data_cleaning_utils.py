@@ -79,7 +79,7 @@ def analyze_non_numeric_item_codes(df: pd.DataFrame,
         dict: Analysis results including patterns found and recommendations
     """
     if verbose:
-        print("\n"+ "="*60)
+        print(""+ "="*60)
         print("STEP 2: ANALYZING NON-NUMERIC ITEM CODE PATTERNS")
         print("="*60)
     
@@ -121,10 +121,10 @@ def analyze_non_numeric_item_codes(df: pd.DataFrame,
                 
                 if verbose:
                     print(f"Pattern analysis:")
-                    print(f"  Most common format: [numbers][letters]")
-                    print(f"  Suffixes found:")
+                    print(f"Most common format: [numbers][letters]")
+                    print(f"Suffixes found:")
                     for suffix, count in suffixes.head(5).items():
-                        print(f"    '{suffix}': {count} occurrences")
+                        print(f"  '{suffix}': {count} occurrences")
                 
                 # Show examples
                 if verbose and len(non_numeric) > 0:
@@ -132,9 +132,9 @@ def analyze_non_numeric_item_codes(df: pd.DataFrame,
                     sample = non_numeric.head(max_examples)
                     for idx, row in sample.iterrows():
                         if 'ITEM DESCRIPTION' in df.columns:
-                            print(f"  {row[item_code_col]} - {row['ITEM DESCRIPTION'][:50]}...")
+                            print(f"{row[item_code_col]} - {row['ITEM DESCRIPTION'][:50]}...")
                         else:
-                            print(f"  {row[item_code_col]}")
+                            print(f"{row[item_code_col]}")
         
         except Exception as e:
             if verbose:
@@ -158,7 +158,7 @@ def analyze_non_numeric_item_codes(df: pd.DataFrame,
     if verbose and results['recommendations']:
         print(f"\n Recommendations:")
         for i, rec in enumerate(results['recommendations'], 1):
-            print(f"  {i}. {rec}")
+            print(f"{i}. {rec}")
     
     return results
 
@@ -185,7 +185,7 @@ def standardize_item_codes_with_suffix(df: pd.DataFrame,
         pd.DataFrame: Cleaned DataFrame copy with standardized item codes
     """
     if verbose:
-        print("\n"+ "="*60)
+        print(""+ "="*60)
         print(f"STEP 3: STANDARDIZING ITEM CODES ('{suffix}' SUFFIX CONSOLIDATION)")
         print("="*60)
     
@@ -273,7 +273,7 @@ def standardize_item_codes_with_suffix(df: pd.DataFrame,
             consolidated_items = df_clean[df_clean[item_code_col].astype(str) == sample_base]
             print(f"Verification - Items with code {sample_base}: {len(consolidated_items)}")
             if len(consolidated_items) > 1:
-                print(f"  ✓ Successfully created duplicates for consolidation")
+                print(f"✓ Successfully created duplicates for consolidation")
     
     return df_clean
 
@@ -293,7 +293,7 @@ def convert_item_codes_to_numeric(df: pd.DataFrame,
         pd.DataFrame: DataFrame copy with numeric item codes
     """
     if verbose:
-        print("\n"+ "="*60)
+        print(""+ "="*60)
         print("STEP 4: CONVERTING ITEM CODES TO NUMERIC TYPE")
         print("="*60)
     
@@ -318,8 +318,8 @@ def convert_item_codes_to_numeric(df: pd.DataFrame,
         if len(non_numeric) > 0:
             if verbose:
                 print(f" Warning: {len(non_numeric)} non-numeric values found")
-                print(f"  These will become NaN during conversion")
-                print(f"  Sample: {non_numeric[item_code_col].head().tolist()}")
+                print(f"These will become NaN during conversion")
+                print(f"Sample: {non_numeric[item_code_col].head().tolist()}")
     
     try:
         # Convert to numeric
@@ -365,7 +365,7 @@ def filter_item_types(df: pd.DataFrame,
         pd.DataFrame: Filtered DataFrame copy
     """
     if verbose:
-        print("\n"+ "="*60)
+        print(""+ "="*60)
         print("STEP 5: FILTERING TO BUSINESS-RELEVANT ITEM TYPES")
         print("="*60)
     
@@ -383,7 +383,7 @@ def filter_item_types(df: pd.DataFrame,
         current_counts = df_clean[item_type_col].value_counts()
         for item_type, count in current_counts.items():
             status = "✓ KEEPING"if item_type in item_types_to_keep else "✗ REMOVING"
-            print(f"  {item_type}: {count:,} ({status})")
+            print(f"{item_type}: {count:,} ({status})")
         
         print(f"\n Filtering to keep: {item_types_to_keep}")
     
@@ -401,13 +401,13 @@ def filter_item_types(df: pd.DataFrame,
         print(f"Final item type distribution:")
         final_counts = df_clean[item_type_col].value_counts()
         for item_type, count in final_counts.items():
-            print(f"  {item_type}: {count:,}")
+            print(f"{item_type}: {count:,}")
         
         print(f"\n Summary:")
-        print(f"  Original rows: {original_count:,}")
-        print(f"  Rows kept: {rows_kept:,}")
-        print(f"  Rows removed: {rows_removed:,}")
-        print(f"  Data retention: {(rows_kept/original_count*100):.1f}%")
+        print(f"Original rows: {original_count:,}")
+        print(f"Rows kept: {rows_kept:,}")
+        print(f"Rows removed: {rows_removed:,}")
+        print(f"Data retention: {(rows_kept/original_count*100):.1f}%")
         
         if rows_removed > 0:
             print(f" Removed categories: {set(df[item_type_col].unique()) - set(item_types_to_keep)}")
@@ -469,7 +469,7 @@ def run_complete_item_code_standardization(df: pd.DataFrame,
         else:
             df_step3 = df_step1.copy()
             if verbose:
-                print("\n  Skipping standardization - no non-numeric codes found")
+                print("Skipping standardization - no non-numeric codes found")
         
         report['after_step3_shape'] = df_step3.shape
         
@@ -496,7 +496,7 @@ def run_complete_item_code_standardization(df: pd.DataFrame,
         }
         
         if verbose:
-            print("\n"+ ""+ "="*60 + "")
+            print(""+ ""+ "="*60 + "")
             print("PIPELINE COMPLETE - FINAL SUMMARY")
             print(""+ "="*60 + "")
             print(f"Original dataset: {original_rows:,} rows")
@@ -515,7 +515,7 @@ def run_complete_item_code_standardization(df: pd.DataFrame,
             
             print(f"\n Data quality improvements:")
             for improvement in improvements:
-                print(f"  {improvement}")
+                print(f"{improvement}")
             
             report['data_quality_improvements'] = improvements
         
@@ -535,7 +535,7 @@ def run_complete_item_code_standardization(df: pd.DataFrame,
 
 if __name__ == "__main__":
     print("Enhanced Data Utilities with Progress Tracking - Loaded Successfully!")
-    print("\nExample usage:")
+    print("Example usage:")
     print("""
     # Individual functions:
     df_clean = clean_missing_supplier_data(df)
