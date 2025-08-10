@@ -1,3 +1,7 @@
+import pandas as pd
+import time  # <- Add this line
+from difflib import SequenceMatcher
+
 """
 Fuzzy Supplier Matching System
 Handles name variations, case differences, and business suffix inconsistencies
