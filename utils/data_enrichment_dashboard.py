@@ -7,7 +7,7 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="Data Engineering Pipeline Showcase",
+    page_title="YO BRO THIS SHIT NEEDS FIXING",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded"
