@@ -795,6 +795,118 @@ def create_country_comparison_report(df_original, df_enhanced):
         print(f"\nTop 10 newly identified countries:")
         for i, (country, count) in enumerate(gained_by_country.items(), 1):
             print(f"  {i:2d}. {country}: {count:,}")
+            
+            
+def classify_wine_color(variety):
+    """Classify wine variety into color categories - comprehensive version"""
+    if not variety or variety.strip() == '':
+        return 'Other'  # For the 25,170 unclassified wines
+    
+    variety = variety.strip().lower()
+    
+    # RED WINES
+    red_varieties = {
+        'red blend', 'cabernet sauvignon', 'pinot noir', 'merlot', 'malbec', 
+        'syrah', 'zinfandel', 'tempranillo', 'sangiovese', 'nebbiolo',
+        'cabernet franc', 'montepulciano', 'chianti', 'gamay', 'barbera',
+        'garnacha', 'shiraz', 'portuguese red', 'tempranillo blend', 
+        'nero d\'avola', 'petite sirah', 'monastrell', 'amarone', 'primitivo',
+        'pinotage', 'corvina, rondinella, molinara', 'saperavi', 'nerello mascalese',
+        'carmenère', 'aglianico', 'grenache', 'bonarda', 'dolcetto', 'mencía',
+        'tannat-cabernet', 'zweigelt', 'cannonau', 'valpolicella', 'agiorgitiko',
+        'carignan', 'negroamaro', 'sagrantino', 'tannat', 'frappato',
+        'malbec-merlot', 'xinomavro', 'valdiguié', 'blaufränkisch', 'tinta negra mole',
+        'malvasia nera', 'tinta miúda', 'touriga nacional', 'gamza', 'tempranillo-merlot',
+        'cabernet sauvignon-merlot', 'petit verdot', 'st. laurent', 'teroldego',
+        'sousão', 'graciano', 'lagrein', 'chambourcin', 'plavac mali', 'portuguiser',
+        'bobal', 'corvina', 'monica', 'mavrud', 'syrah-cabernet', 'refosco',
+        'feteasca neagra', 'pinot noir-gamay', 'dornfelder', 'syrah-cabernet sauvignon',
+        'lemberger', 'kekfrankos', 'vranec', 'garnacha tintorera', 'piedirosso',
+        'cabernet franc-cabernet sauvignon', 'duras', 'alicante bouschet', 'gaglioppo',
+        'schiava', 'papaskarasi', 'argaman', 'prieto picudo', 'mandilaria',
+        'monastrell-syrah', 'susumaniello', 'roviello', 'melnik', 'cinsault',
+        'merlot-argaman'
+    }
+    
+    # WHITE WINES
+    white_varieties = {
+        'chardonnay', 'sauvignon blanc', 'pinot grigio', 'white blend', 'moscato',
+        'riesling', 'albariño', 'viognier', 'gewürztraminer', 'chenin blanc',
+        'portuguese white', 'garganega', 'verdejo', 'catarratto', 'viura',
+        'vinho verde', 'grillo', 'grüner veltliner', 'cortese', 'torrontés',
+        'carricante', 'melon', 'moschofilero', 'picpoul', 'ugni blanc-colombard',
+        'greco', 'falanghina', 'vermentino', 'rkatsiteli', 'muscadet', 'friulano',
+        'assyrtiko', 'sémillon', 'malvasia', 'savatiano', 'godello', 'verdicchio',
+        'verdejo-viura', 'maturana', 'inzolia', 'vernaccia', 'torbato', 'arneis',
+        'rieslaner', 'furmint', 'avesso', 'pecorino', 'ribolla gialla', 'petit manseng',
+        'müller-thurgau', 'silvaner', 'grechetto', 'robola', 'symphony',
+        'viognier-chardonnay', 'trebbiano', 'turbiana', 'zibibbo', 'roussanne',
+        'auxerrois', 'erbaluce', 'passerina', 'kerner', 'malvasia istriana',
+        'chinuri', 'greco bianco', 'antão vaz', 'vidal blanc', 'žilavka',
+        'scheurebe', 'mtsvane', 'chenin blanc-chardonnay', 'loureiro', 'jacquère',
+        'albana', 'malagousia', 'vilana', 'garnacha blanca', 'picapoll',
+        'marsanne-viognier', 'malvasia bianca', 'emir', 'seyval blanc', 
+        'chardonnay-sauvignon', 'tocai', 'alvarinho', 'fiano', 'kisi'
+    }
+    
+    # ROSÉ WINES
+    rose_varieties = {
+        'rosé', 'white zinfandel'
+    }
+    
+    # SPARKLING WINES
+    sparkling_varieties = {
+        'prosecco', 'glera', 'sparkling blend', 'champagne blend', 'lambrusco',
+        'brachetto', 'portuguese sparkling', 'lambrusco di sorbara', 
+        'lambrusco grasparossa', 'xarel-lo'
+    }
+    
+    # FORTIFIED/DESSERT WINES
+    fortified_varieties = {
+        'port', 'sherry', 'white port', 'pedro ximénez', 'tokaji', 'mavrodaphne',
+        'palomino', 'bual', 'terrantez'
+    }
+    
+    # OTHER/SPECIAL CATEGORIES
+    other_varieties = {
+        'sake', 'concord', 'fruit wine'
+    }
+    
+    # BLEND WINES WITH MIXED VARIETIES (let's be more specific)
+    syrah_blend_varieties = {
+        'syrah-viognier'  # This is actually white due to viognier influence
+    }
+    
+    # CLASSIFICATION LOGIC
+    if variety in red_varieties:
+        return 'Red'
+    elif variety in white_varieties:
+        return 'White'
+    elif variety in rose_varieties:
+        return 'Rosé'
+    elif variety in sparkling_varieties:
+        return 'Sparkling'
+    elif variety in fortified_varieties:
+        return 'Fortified'
+    elif variety in other_varieties:
+        return 'Other'
+    elif variety in syrah_blend_varieties:
+        return 'White'  # Syrah-Viognier is typically white/rosé
+    else:
+        return 'Unknown'  # For any edge cases we missed
+
+# Apply it to your dataset
+df_classified_with_color = df_classified.copy()
+df_classified_with_color['wine_color'] = df_classified['final_variety'].apply(classify_wine_color)
+
+print("Wine color distribution:")
+print(df_classified_with_color['wine_color'].value_counts())
+
+# Check for any varieties that got classified as 'Unknown'
+unknown_varieties = df_classified_with_color[df_classified_with_color['wine_color'] == 'Unknown']
+if len(unknown_varieties) > 0:
+    print(f"\nVarieties classified as 'Unknown': {len(unknown_varieties)}")
+    print(unknown_varieties['final_variety'].value_counts())
 
 
 # Usage example for the enhanced system:
