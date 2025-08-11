@@ -86,11 +86,15 @@ def create_monthly_trends_chart(df):
         'WINE_NAME_EXTRACTED': 'nunique'
     }).reset_index()
     
-    # Create proper date for sorting (convert back to month number for sorting)
+    # Create proper date for sorting
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     monthly_data['month_num'] = monthly_data['month_name'].apply(lambda x: month_order.index(x) + 1)
-    monthly_data['Date'] = pd.to_datetime(monthly_data[['YEAR', 'month_num']].assign(day=1))
+    
+    # Create date column properly
+    monthly_data['Date'] = pd.to_datetime(
+        monthly_data.apply(lambda row: f"{row['YEAR']}-{row['month_num']:02d}-01", axis=1)
+    )
     monthly_data = monthly_data.sort_values('Date')
     
     # Create subplot with secondary y-axis
@@ -255,20 +259,6 @@ def create_country_performance_chart(df):
     
     return fig
 
-def create_data_quality_summary(df):
-    """Create data quality summary"""
-    quality_metrics = {
-        'Total Records': len(df),
-        'Unclassified Countries': len(df[df['final_country'] == 'Unclassified']),
-        'Unclassified Varieties': len(df[df['final_variety'] == 'Unclassified']),
-        'Unclassified Colors': len(df[df['wine_color'] == 'Unclassified']),
-        'Sparkling Wines': df['total_sparkling'].sum(),
-        'Red Sparkling': df['red_sparkling'].sum(),
-        'White Sparkling': df['white_sparkling'].sum()
-    }
-    
-    return quality_metrics
-
 def main():
     # Header
     st.markdown('<h1 class="main-header">🍷 Wine Market Intelligence Dashboard</h1>', unsafe_allow_html=True)
@@ -278,7 +268,7 @@ def main():
         # Load data
         df = load_data()
         
-        # SIDEBAR FILTERS
+        # SIDEBAR FILTERS - Only sales-relevant filters
         st.sidebar.header("🔍 Filters")
         
         # Year filter
@@ -290,41 +280,20 @@ def main():
                        'July', 'August', 'September', 'October', 'November', 'December'].index(x))
         selected_months = st.sidebar.multiselect("Months", months, default=months)
         
-        # Supplier filter (if SUPPLIER column exists)
-        if 'SUPPLIER' in df.columns:
-            suppliers = sorted(df['SUPPLIER'].dropna().unique())
-            selected_suppliers = st.sidebar.multiselect("Suppliers", suppliers, default=suppliers[:10] if len(suppliers) > 10 else suppliers)
-        else:
-            selected_suppliers = []
-        
-        # Match score filter (if REVIEW_MATCH_SCORE column exists)
-        if 'REVIEW_MATCH_SCORE' in df.columns:
-            match_threshold = st.sidebar.slider("Minimum Match Score", 
-                                               min_value=float(df['REVIEW_MATCH_SCORE'].min()), 
-                                               max_value=float(df['REVIEW_MATCH_SCORE'].max()), 
-                                               value=float(df['REVIEW_MATCH_SCORE'].min()))
-        else:
-            match_threshold = 0
-        
         # Wine type filter
         sparkling_choice = st.sidebar.radio("Wine Type", ["All", "Sparkling Only", "Non-Sparkling Only"])
-        
-        # Sparkling type filter (only show if relevant)
-        if sparkling_choice in ["All", "Sparkling Only"]:
-            sparkling_types = [t for t in df['sparkling_type'].unique() if t != 'not_sparkling']
-            selected_sparkling_types = st.sidebar.multiselect("Sparkling Types", sparkling_types, default=sparkling_types)
         
         # Wine color filter
         colors = sorted(df['wine_color'].unique())
         selected_colors = st.sidebar.multiselect("Wine Colors", colors, default=colors)
         
-        # Variety filter
-        top_varieties = df['final_variety'].value_counts().head(50).index.tolist()
-        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 50)", top_varieties, default=top_varieties[:15])
+        # Variety filter - show top varieties
+        top_varieties = df['final_variety'].value_counts().head(20).index.tolist()
+        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 20)", top_varieties, default=top_varieties)
         
-        # Country filter
-        top_countries = df['final_country'].value_counts().head(20).index.tolist()
-        selected_countries = st.sidebar.multiselect("Countries (Top 20)", top_countries, default=top_countries[:10])
+        # Country filter - show top countries
+        top_countries = df['final_country'].value_counts().head(15).index.tolist()
+        selected_countries = st.sidebar.multiselect("Countries (Top 15)", top_countries, default=top_countries)
         
         # APPLY FILTERS
         filtered_df = df.copy()
@@ -335,17 +304,10 @@ def main():
         if selected_months:
             filtered_df = filtered_df[filtered_df['month_name'].isin(selected_months)]
             
-        if selected_suppliers and 'SUPPLIER' in df.columns:
-            filtered_df = filtered_df[filtered_df['SUPPLIER'].isin(selected_suppliers)]
-            
         if sparkling_choice == "Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == True]
         elif sparkling_choice == "Non-Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == False]
-        
-        # Apply match score filter if column exists
-        if 'REVIEW_MATCH_SCORE' in df.columns:
-            filtered_df = filtered_df[filtered_df['REVIEW_MATCH_SCORE'] >= match_threshold]
         
         if selected_colors:
             filtered_df = filtered_df[filtered_df['wine_color'].isin(selected_colors)]
@@ -356,49 +318,10 @@ def main():
         if selected_countries:
             filtered_df = filtered_df[filtered_df['final_country'].isin(selected_countries)]
         
-        # Create chart data (less restrictive for better insights)
-        chart_df = df.copy()
-        
-        # Apply core filters only
-        if selected_years:
-            chart_df = chart_df[chart_df['YEAR'].isin(selected_years)]
-            
-        if selected_months:
-            chart_df = chart_df[chart_df['month_name'].isin(selected_months)]
-            
-        if sparkling_choice == "Sparkling Only":
-            chart_df = chart_df[chart_df['total_sparkling'] == True]
-        elif sparkling_choice == "Non-Sparkling Only":
-            chart_df = chart_df[chart_df['total_sparkling'] == False]
-        
-        if 'REVIEW_MATCH_SCORE' in df.columns:
-            chart_df = chart_df[chart_df['REVIEW_MATCH_SCORE'] >= match_threshold]
-        
-        # Apply other filters to charts too if they're not too restrictive
-        if len(selected_colors) > 1:  # Only if multiple colors selected
-            chart_df = chart_df[chart_df['wine_color'].isin(selected_colors)]
-        
         # Show filtering results
-        st.write(f"📊 **Filtered Data:** {len(filtered_df):,} records | **Chart Data:** {len(chart_df):,} records | **Total:** {len(df):,}")
+        st.write(f"📊 **Showing:** {len(filtered_df):,} records out of {len(df):,} total records")
         
         if len(filtered_df) > 0:
-            # Data quality summary
-            with st.expander("📋 Data Quality Summary"):
-                quality_metrics = create_data_quality_summary(filtered_df)
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("Total Records", f"{quality_metrics['Total Records']:,}")
-                    st.metric("Sparkling Wines", f"{quality_metrics['Sparkling Wines']:,}")
-                
-                with col2:
-                    st.metric("Unclassified Countries", f"{quality_metrics['Unclassified Countries']:,}")
-                    st.metric("Red Sparkling", f"{quality_metrics['Red Sparkling']:,}")
-                
-                with col3:
-                    st.metric("Unclassified Varieties", f"{quality_metrics['Unclassified Varieties']:,}")
-                    st.metric("White Sparkling", f"{quality_metrics['White Sparkling']:,}")
-            
             # Main metrics
             metrics = create_summary_metrics(filtered_df)
             
@@ -420,55 +343,47 @@ def main():
             col1, col2 = st.columns(2)
             
             with col1:
-                monthly_chart = create_monthly_trends_chart(chart_df)
+                monthly_chart = create_monthly_trends_chart(filtered_df)
                 st.plotly_chart(monthly_chart, use_container_width=True)
             
             with col2:
-                color_chart = create_wine_color_chart(chart_df)
+                color_chart = create_wine_color_chart(filtered_df)
                 st.plotly_chart(color_chart, use_container_width=True)
             
             # Variety performance chart
-            variety_chart = create_variety_performance_chart(chart_df)
+            variety_chart = create_variety_performance_chart(filtered_df)
             st.plotly_chart(variety_chart, use_container_width=True)
             
             col1, col2 = st.columns(2)
             
             with col1:
                 # Country performance chart
-                country_chart = create_country_performance_chart(chart_df)
+                country_chart = create_country_performance_chart(filtered_df)
                 st.plotly_chart(country_chart, use_container_width=True)
             
             with col2:
                 # Sparkling wine analysis
-                sparkling_chart = create_sparkling_analysis_chart(chart_df)
+                sparkling_chart = create_sparkling_analysis_chart(filtered_df)
                 st.plotly_chart(sparkling_chart, use_container_width=True)
             
             # Data table
             with st.expander("🔍 View Filtered Data"):
-                # Show key columns only - user-friendly names
+                # Show only the relevant sales columns
                 display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 
-                               'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type']
+                               'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type', 'YEAR', 'month_name']
                 
-                # Only include columns that exist in the dataframe
-                display_cols = [col for col in display_cols if col in filtered_df.columns]
-                
-                # Rename columns for display
+                # Create user-friendly display
                 display_df = filtered_df[display_cols].copy()
-                col_rename = {
-                    'WINE_NAME_EXTRACTED': 'Wine Name',
-                    'final_variety': 'Variety',
-                    'wine_color': 'Color',
-                    'final_country': 'Country',
-                    'RETAIL SALES': 'Retail Sales ($)',
-                    'WAREHOUSE SALES': 'Warehouse Sales ($)',
-                    'sparkling_type': 'Sparkling Type'
-                }
-                display_df.columns = [col_rename.get(col, col) for col in display_df.columns]
+                display_df.columns = ['Wine Name', 'Variety', 'Color', 'Country', 
+                                     'Retail Sales ($)', 'Warehouse Sales ($)', 'Sparkling Type', 'Year', 'Month']
+                
+                # Sort by retail sales descending
+                display_df = display_df.sort_values('Retail Sales ($)', ascending=False)
                 
                 st.dataframe(display_df.head(100), use_container_width=True)
                 
                 if len(filtered_df) > 100:
-                    st.info(f"Showing first 100 of {len(filtered_df):,} records")
+                    st.info(f"Showing top 100 records by retail sales. Total: {len(filtered_df):,} records")
             
         else:
             st.warning("❌ No data matches your current filters. Try expanding your selection!")
