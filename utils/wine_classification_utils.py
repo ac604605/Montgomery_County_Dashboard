@@ -895,12 +895,6 @@ def classify_wine_color(variety):
     else:
         return 'Unknown'  # For any edge cases we missed
 
-# Apply it to your dataset
-df_classified_with_color = df_classified.copy()
-df_classified_with_color['wine_color'] = df_classified['final_variety'].apply(classify_wine_color)
-
-print("Wine color distribution:")
-print(df_classified_with_color['wine_color'].value_counts())
 
 # Check for any varieties that got classified as 'Unknown'
 unknown_varieties = df_classified_with_color[df_classified_with_color['wine_color'] == 'Unknown']
