@@ -90,7 +90,9 @@ def create_monthly_trends_chart(df):
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     monthly_data['month_num'] = monthly_data['month_name'].apply(lambda x: month_order.index(x) + 1)
-    monthly_data['Date'] = pd.to_datetime(monthly_data[['YEAR', 'month_num']].assign(day=1))
+    
+    # Create date properly with day=1
+    monthly_data['Date'] = pd.to_datetime(monthly_data.assign(day=1)[['YEAR', 'month_num', 'day']])
     monthly_data = monthly_data.sort_values('Date')
     
     # Create subplot with secondary y-axis
