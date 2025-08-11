@@ -1,4 +1,34 @@
-import streamlit as st
+if len(filtered_df) > 0:
+            # Data quality summary
+            with st.expander("📋 Data Quality Summary"):
+                quality_metrics = create_data_quality_summary(filtered_df)
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Total Records", f"{quality_metrics['Total Records']:,}")
+                    st.metric("Sparkling Wines", f"{quality_metrics['Sparkling Wines']:,}")
+                
+                with col2:
+                    st.metric("Unclassified Countries", f"{quality_metrics['Unclassified Countries']:,}")
+                    st.metric("Red Sparkling", f"{quality_metrics['Red Sparkling']:,}")
+                
+                with col3:
+                    st.metric("Unclassified Varieties", f"{quality_metrics['Unclassified Varieties']:,}")
+                    st.metric("White Sparkling", f"{quality_metrics['White Sparkling']:,}")
+            
+            # Main metrics
+            metrics = create_summary_metrics(filtered_df)
+            
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.metric("Retail Sales", f"${metrics['total_sales']:,.0f}")
+            with col2:
+                st.metric("Warehouse Sales", f"${metrics['warehouse_sales']:,.0f}")
+            with col3:
+                st.metric("Total Records", f"{metrics['total_wines']:,}")
+            with col4:
+                st.metric("Unique Varieties", f"{metrics['unique_varieties']:,}")
+            import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -86,15 +116,11 @@ def create_monthly_trends_chart(df):
         'WINE_NAME_EXTRACTED': 'nunique'
     }).reset_index()
     
-    # Create proper date for sorting
+    # Create proper date for sorting (convert back to month number for sorting)
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     monthly_data['month_num'] = monthly_data['month_name'].apply(lambda x: month_order.index(x) + 1)
-    
-    # Create date column properly
-    monthly_data['Date'] = pd.to_datetime(
-        monthly_data.apply(lambda row: f"{row['YEAR']}-{row['month_num']:02d}-01", axis=1)
-    )
+    monthly_data['Date'] = pd.to_datetime(monthly_data[['YEAR', 'month_num']].assign(day=1))
     monthly_data = monthly_data.sort_values('Date')
     
     # Create subplot with secondary y-axis
@@ -129,37 +155,91 @@ def create_monthly_trends_chart(df):
     
     return fig
 
-def create_variety_performance_chart(df, top_n=15):
-    """Create top wine varieties performance chart"""
-    variety_stats = df.groupby('final_variety').agg({
-        'RETAIL SALES': 'sum',
-        'WAREHOUSE SALES': 'sum',
-        'WINE_NAME_EXTRACTED': 'nunique'
-    }).reset_index()
+def create_variety_performance_chart(df, selected_varieties=None, top_n=15):
+    """Create top wine varieties performance chart OR top wines within selected varieties"""
     
-    variety_stats = variety_stats.sort_values('RETAIL SALES', ascending=False).head(top_n)
-    
-    fig = go.Figure()
-    
-    # Add bar chart
-    fig.add_trace(go.Bar(
-        x=variety_stats['RETAIL SALES'],
-        y=variety_stats['final_variety'],
-        orientation='h',
-        marker_color='#722F37',
-        name='Retail Sales',
-        text=[f'${x:,.0f}' for x in variety_stats['RETAIL SALES']],
-        textposition='inside'
-    ))
-    
-    fig.update_layout(
-        title=f"Top {len(variety_stats)} Wine Varieties by Retail Sales",
-        xaxis_title="Retail Sales ($)",
-        yaxis_title="Wine Variety",
-        height=600,
-        yaxis={'categoryorder': 'total ascending'},
-        showlegend=False
-    )
+    # If 2 or fewer varieties selected, show top wines within those varieties
+    if selected_varieties and len(selected_varieties) <= 2:
+        # Filter to only the selected varieties
+        variety_df = df[df['final_variety'].isin(selected_varieties)]
+        
+        # Group by wine name and variety to show top individual wines
+        wine_stats = variety_df.groupby(['WINE_NAME_EXTRACTED', 'final_variety']).agg({
+            'RETAIL SALES': 'sum',
+            'WAREHOUSE SALES': 'sum'
+        }).reset_index()
+        
+        # Sort by retail sales and take top wines
+        wine_stats = wine_stats.sort_values('RETAIL SALES', ascending=False).head(top_n)
+        
+        # Create labels that show both wine name and variety (for clarity when multiple varieties)
+        if len(selected_varieties) == 1:
+            wine_stats['display_label'] = wine_stats['WINE_NAME_EXTRACTED']
+            chart_title = f"Top {len(wine_stats)} {selected_varieties[0]} Wines by Retail Sales"
+        else:
+            wine_stats['display_label'] = wine_stats['WINE_NAME_EXTRACTED'] + ' (' + wine_stats['final_variety'] + ')'
+            chart_title = f"Top {len(wine_stats)} Wines: {' & '.join(selected_varieties)}"
+        
+        fig = go.Figure()
+        
+        # Add bar chart for individual wines
+        fig.add_trace(go.Bar(
+            x=wine_stats['RETAIL SALES'],
+            y=wine_stats['display_label'],
+            orientation='h',
+            marker_color='#722F37',
+            name='Retail Sales',
+            text=[f'${x:,.0f}' for x in wine_stats['RETAIL SALES']],
+            textposition='inside',
+            hovertemplate='<b>%{y}</b><br>Retail Sales: $%{x:,.0f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            title=chart_title,
+            xaxis_title="Retail Sales ($)",
+            yaxis_title="Wine Name",
+            height=600,
+            yaxis={'categoryorder': 'total ascending'},
+            showlegend=False
+        )
+        
+    else:
+        # Default behavior: show top varieties by sales
+        variety_stats = df.groupby('final_variety').agg({
+            'RETAIL SALES': 'sum',
+            'WAREHOUSE SALES': 'sum',
+            'WINE_NAME_EXTRACTED': 'nunique'
+        }).reset_index()
+        
+        variety_stats = variety_stats.sort_values('RETAIL SALES', ascending=False).head(top_n)
+        
+        fig = go.Figure()
+        
+        # Add bar chart
+        fig.add_trace(go.Bar(
+            x=variety_stats['RETAIL SALES'],
+            y=variety_stats['final_variety'],
+            orientation='h',
+            marker_color='#722F37',
+            name='Retail Sales',
+            text=[f'${x:,.0f}' for x in variety_stats['RETAIL SALES']],
+            textposition='inside',
+            hovertemplate='<b>%{y}</b><br>Retail Sales: $%{x:,.0f}<br>Unique Wines: %{customdata}<extra></extra>',
+            customdata=variety_stats['WINE_NAME_EXTRACTED']
+        ))
+        
+        chart_title = f"Top {len(variety_stats)} Wine Varieties by Retail Sales"
+        if selected_varieties and len(selected_varieties) > 2:
+            chart_title += f" (Filtered to {len(selected_varieties)} varieties)"
+        
+        fig.update_layout(
+            title=chart_title,
+            xaxis_title="Retail Sales ($)",
+            yaxis_title="Wine Variety",
+            height=600,
+            yaxis={'categoryorder': 'total ascending'},
+            showlegend=False
+        )
     
     return fig
 
@@ -259,6 +339,20 @@ def create_country_performance_chart(df):
     
     return fig
 
+def create_data_quality_summary(df):
+    """Create data quality summary"""
+    quality_metrics = {
+        'Total Records': len(df),
+        'Unclassified Countries': len(df[df['final_country'] == 'Unclassified']),
+        'Unclassified Varieties': len(df[df['final_variety'] == 'Unclassified']),
+        'Unclassified Colors': len(df[df['wine_color'] == 'Unclassified']),
+        'Sparkling Wines': df['total_sparkling'].sum(),
+        'Red Sparkling': df['red_sparkling'].sum(),
+        'White Sparkling': df['white_sparkling'].sum()
+    }
+    
+    return quality_metrics
+
 def main():
     # Header
     st.markdown('<h1 class="main-header">🍷 Wine Market Intelligence Dashboard</h1>', unsafe_allow_html=True)
@@ -268,7 +362,7 @@ def main():
         # Load data
         df = load_data()
         
-        # SIDEBAR FILTERS - Only sales-relevant filters
+        # SIDEBAR FILTERS
         st.sidebar.header("🔍 Filters")
         
         # Year filter
@@ -283,17 +377,22 @@ def main():
         # Wine type filter
         sparkling_choice = st.sidebar.radio("Wine Type", ["All", "Sparkling Only", "Non-Sparkling Only"])
         
+        # Sparkling type filter (only show if relevant)
+        if sparkling_choice in ["All", "Sparkling Only"]:
+            sparkling_types = [t for t in df['sparkling_type'].unique() if t != 'not_sparkling']
+            selected_sparkling_types = st.sidebar.multiselect("Sparkling Types", sparkling_types, default=sparkling_types)
+        
         # Wine color filter
         colors = sorted(df['wine_color'].unique())
         selected_colors = st.sidebar.multiselect("Wine Colors", colors, default=colors)
         
-        # Variety filter - show top varieties
-        top_varieties = df['final_variety'].value_counts().head(20).index.tolist()
-        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 20)", top_varieties, default=top_varieties)
+        # Variety filter
+        top_varieties = df['final_variety'].value_counts().head(50).index.tolist()
+        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 50)", top_varieties, default=top_varieties[:15])
         
-        # Country filter - show top countries
-        top_countries = df['final_country'].value_counts().head(15).index.tolist()
-        selected_countries = st.sidebar.multiselect("Countries (Top 15)", top_countries, default=top_countries)
+        # Country filter
+        top_countries = df['final_country'].value_counts().head(20).index.tolist()
+        selected_countries = st.sidebar.multiselect("Countries (Top 20)", top_countries, default=top_countries[:10])
         
         # APPLY FILTERS
         filtered_df = df.copy()
@@ -302,12 +401,18 @@ def main():
             filtered_df = filtered_df[filtered_df['YEAR'].isin(selected_years)]
             
         if selected_months:
-            filtered_df = filtered_df[filtered_df['month_name'].isin(selected_months)]
+            filtered_df = filtered_df[filtered_df['MONTH'].isin(selected_months)]
+            
+        if selected_suppliers:
+            filtered_df = filtered_df[filtered_df['SUPPLIER'].isin(selected_suppliers)]
             
         if sparkling_choice == "Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == True]
         elif sparkling_choice == "Non-Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == False]
+        
+        # Apply match score filter
+        filtered_df = filtered_df[filtered_df['REVIEW_MATCH_SCORE'] >= match_threshold]
         
         if selected_colors:
             filtered_df = filtered_df[filtered_df['wine_color'].isin(selected_colors)]
@@ -318,10 +423,48 @@ def main():
         if selected_countries:
             filtered_df = filtered_df[filtered_df['final_country'].isin(selected_countries)]
         
+        # Create chart data (less restrictive for better insights)
+        chart_df = df.copy()
+        
+        # Apply core filters only
+        if selected_years:
+            chart_df = chart_df[chart_df['YEAR'].isin(selected_years)]
+            
+        if selected_months:
+            chart_df = chart_df[chart_df['MONTH'].isin(selected_months)]
+            
+        if sparkling_choice == "Sparkling Only":
+            chart_df = chart_df[chart_df['total_sparkling'] == True]
+        elif sparkling_choice == "Non-Sparkling Only":
+            chart_df = chart_df[chart_df['total_sparkling'] == False]
+        
+        chart_df = chart_df[chart_df['REVIEW_MATCH_SCORE'] >= match_threshold]
+        
+        # Apply other filters to charts too if they're not too restrictive
+        if len(selected_colors) > 1:  # Only if multiple colors selected
+            chart_df = chart_df[chart_df['wine_color'].isin(selected_colors)]
+        
         # Show filtering results
-        st.write(f"📊 **Showing:** {len(filtered_df):,} records out of {len(df):,} total records")
+        st.write(f"📊 **Filtered Data:** {len(filtered_df):,} records | **Chart Data:** {len(chart_df):,} records | **Total:** {len(df):,}")
         
         if len(filtered_df) > 0:
+            # Data quality summary
+            with st.expander("📋 Data Quality Summary"):
+                quality_metrics = create_data_quality_summary(filtered_df)
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Total Records", f"{quality_metrics['Total Records']:,}")
+                    st.metric("Sparkling Wines", f"{quality_metrics['Sparkling Wines']:,}")
+                
+                with col2:
+                    st.metric("Unclassified Countries", f"{quality_metrics['Unclassified Countries']:,}")
+                    st.metric("Red Sparkling", f"{quality_metrics['Red Sparkling']:,}")
+                
+                with col3:
+                    st.metric("Unclassified Varieties", f"{quality_metrics['Unclassified Varieties']:,}")
+                    st.metric("White Sparkling", f"{quality_metrics['White Sparkling']:,}")
+            
             # Main metrics
             metrics = create_summary_metrics(filtered_df)
             
@@ -343,47 +486,44 @@ def main():
             col1, col2 = st.columns(2)
             
             with col1:
-                monthly_chart = create_monthly_trends_chart(filtered_df)
+                monthly_chart = create_monthly_trends_chart(chart_df)
                 st.plotly_chart(monthly_chart, use_container_width=True)
             
             with col2:
-                color_chart = create_wine_color_chart(filtered_df)
+                color_chart = create_wine_color_chart(chart_df)
                 st.plotly_chart(color_chart, use_container_width=True)
             
-            # Variety performance chart
-            variety_chart = create_variety_performance_chart(filtered_df)
+            # Variety performance chart (context-aware)
+            variety_chart = create_variety_performance_chart(chart_df, selected_varieties)
             st.plotly_chart(variety_chart, use_container_width=True)
             
             col1, col2 = st.columns(2)
             
             with col1:
                 # Country performance chart
-                country_chart = create_country_performance_chart(filtered_df)
+                country_chart = create_country_performance_chart(chart_df)
                 st.plotly_chart(country_chart, use_container_width=True)
             
             with col2:
                 # Sparkling wine analysis
-                sparkling_chart = create_sparkling_analysis_chart(filtered_df)
+                sparkling_chart = create_sparkling_analysis_chart(chart_df)
                 st.plotly_chart(sparkling_chart, use_container_width=True)
             
             # Data table
             with st.expander("🔍 View Filtered Data"):
-                # Show only the relevant sales columns
+                # Show key columns only - user-friendly names
                 display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 
-                               'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type', 'YEAR', 'month_name']
+                               'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type']
                 
-                # Create user-friendly display
+                # Rename columns for display
                 display_df = filtered_df[display_cols].copy()
                 display_df.columns = ['Wine Name', 'Variety', 'Color', 'Country', 
-                                     'Retail Sales ($)', 'Warehouse Sales ($)', 'Sparkling Type', 'Year', 'Month']
-                
-                # Sort by retail sales descending
-                display_df = display_df.sort_values('Retail Sales ($)', ascending=False)
+                                     'Retail Sales ($)', 'Warehouse Sales ($)', 'Sparkling Type']
                 
                 st.dataframe(display_df.head(100), use_container_width=True)
                 
                 if len(filtered_df) > 100:
-                    st.info(f"Showing top 100 records by retail sales. Total: {len(filtered_df):,} records")
+                    st.info(f"Showing first 100 of {len(filtered_df):,} records")
             
         else:
             st.warning("❌ No data matches your current filters. Try expanding your selection!")
