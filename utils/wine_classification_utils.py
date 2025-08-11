@@ -800,7 +800,7 @@ def create_country_comparison_report(df_original, df_enhanced):
 def classify_wine_color(variety):
     """Classify wine variety into color categories - comprehensive version"""
     if not variety or variety.strip() == '':
-        return 'Other'  # For the 25,170 unclassified wines
+        return 'Unclassified'
     
     variety = variety.strip().lower()
     
@@ -853,12 +853,13 @@ def classify_wine_color(variety):
     rose_varieties = {
         'rosé', 'white zinfandel'
     }
-    
-    # SPARKLING WINES
+   # SPARKLING WINES (expanded)
     sparkling_varieties = {
         'prosecco', 'glera', 'sparkling blend', 'champagne blend', 'lambrusco',
         'brachetto', 'portuguese sparkling', 'lambrusco di sorbara', 
-        'lambrusco grasparossa', 'xarel-lo'
+        'lambrusco grasparossa', 'xarel-lo',
+    # Add simple sparkling catches
+        'spark', 'brut', 'champagne', 'cuvee', 'cremant', 'cava', 'sekt'
     }
     
     # FORTIFIED/DESSERT WINES
@@ -893,7 +894,7 @@ def classify_wine_color(variety):
     elif variety in syrah_blend_varieties:
         return 'White'  # Syrah-Viognier is typically white/rosé
     else:
-        return 'Unknown'  # For any edge cases we missed
+        return 'Unclassified'  # For any edge cases missed
 
 # Usage example for the enhanced system:
 """
