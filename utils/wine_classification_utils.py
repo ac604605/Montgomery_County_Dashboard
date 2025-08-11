@@ -895,14 +895,6 @@ def classify_wine_color(variety):
     else:
         return 'Unknown'  # For any edge cases we missed
 
-
-# Check for any varieties that got classified as 'Unknown'
-unknown_varieties = df_classified_with_color[df_classified_with_color['wine_color'] == 'Unknown']
-if len(unknown_varieties) > 0:
-    print(f"\nVarieties classified as 'Unknown': {len(unknown_varieties)}")
-    print(unknown_varieties['final_variety'].value_counts())
-
-
 # Usage example for the enhanced system:
 """
 To use this enhanced utility in your notebook:
