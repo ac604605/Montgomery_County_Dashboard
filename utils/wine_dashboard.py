@@ -1,34 +1,4 @@
-if len(filtered_df) > 0:
-            # Data quality summary
-            with st.expander("📋 Data Quality Summary"):
-                quality_metrics = create_data_quality_summary(filtered_df)
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("Total Records", f"{quality_metrics['Total Records']:,}")
-                    st.metric("Sparkling Wines", f"{quality_metrics['Sparkling Wines']:,}")
-                
-                with col2:
-                    st.metric("Unclassified Countries", f"{quality_metrics['Unclassified Countries']:,}")
-                    st.metric("Red Sparkling", f"{quality_metrics['Red Sparkling']:,}")
-                
-                with col3:
-                    st.metric("Unclassified Varieties", f"{quality_metrics['Unclassified Varieties']:,}")
-                    st.metric("White Sparkling", f"{quality_metrics['White Sparkling']:,}")
-            
-            # Main metrics
-            metrics = create_summary_metrics(filtered_df)
-            
-            col1, col2, col3, col4, col5 = st.columns(5)
-            with col1:
-                st.metric("Retail Sales", f"${metrics['total_sales']:,.0f}")
-            with col2:
-                st.metric("Warehouse Sales", f"${metrics['warehouse_sales']:,.0f}")
-            with col3:
-                st.metric("Total Records", f"{metrics['total_wines']:,}")
-            with col4:
-                st.metric("Unique Varieties", f"{metrics['unique_varieties']:,}")
-            import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -320,6 +290,22 @@ def main():
                        'July', 'August', 'September', 'October', 'November', 'December'].index(x))
         selected_months = st.sidebar.multiselect("Months", months, default=months)
         
+        # Supplier filter (if SUPPLIER column exists)
+        if 'SUPPLIER' in df.columns:
+            suppliers = sorted(df['SUPPLIER'].dropna().unique())
+            selected_suppliers = st.sidebar.multiselect("Suppliers", suppliers, default=suppliers[:10] if len(suppliers) > 10 else suppliers)
+        else:
+            selected_suppliers = []
+        
+        # Match score filter (if REVIEW_MATCH_SCORE column exists)
+        if 'REVIEW_MATCH_SCORE' in df.columns:
+            match_threshold = st.sidebar.slider("Minimum Match Score", 
+                                               min_value=float(df['REVIEW_MATCH_SCORE'].min()), 
+                                               max_value=float(df['REVIEW_MATCH_SCORE'].max()), 
+                                               value=float(df['REVIEW_MATCH_SCORE'].min()))
+        else:
+            match_threshold = 0
+        
         # Wine type filter
         sparkling_choice = st.sidebar.radio("Wine Type", ["All", "Sparkling Only", "Non-Sparkling Only"])
         
@@ -347,9 +333,9 @@ def main():
             filtered_df = filtered_df[filtered_df['YEAR'].isin(selected_years)]
             
         if selected_months:
-            filtered_df = filtered_df[filtered_df['MONTH'].isin(selected_months)]
+            filtered_df = filtered_df[filtered_df['month_name'].isin(selected_months)]
             
-        if selected_suppliers:
+        if selected_suppliers and 'SUPPLIER' in df.columns:
             filtered_df = filtered_df[filtered_df['SUPPLIER'].isin(selected_suppliers)]
             
         if sparkling_choice == "Sparkling Only":
@@ -357,8 +343,9 @@ def main():
         elif sparkling_choice == "Non-Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == False]
         
-        # Apply match score filter
-        filtered_df = filtered_df[filtered_df['REVIEW_MATCH_SCORE'] >= match_threshold]
+        # Apply match score filter if column exists
+        if 'REVIEW_MATCH_SCORE' in df.columns:
+            filtered_df = filtered_df[filtered_df['REVIEW_MATCH_SCORE'] >= match_threshold]
         
         if selected_colors:
             filtered_df = filtered_df[filtered_df['wine_color'].isin(selected_colors)]
@@ -377,14 +364,15 @@ def main():
             chart_df = chart_df[chart_df['YEAR'].isin(selected_years)]
             
         if selected_months:
-            chart_df = chart_df[chart_df['MONTH'].isin(selected_months)]
+            chart_df = chart_df[chart_df['month_name'].isin(selected_months)]
             
         if sparkling_choice == "Sparkling Only":
             chart_df = chart_df[chart_df['total_sparkling'] == True]
         elif sparkling_choice == "Non-Sparkling Only":
             chart_df = chart_df[chart_df['total_sparkling'] == False]
         
-        chart_df = chart_df[chart_df['REVIEW_MATCH_SCORE'] >= match_threshold]
+        if 'REVIEW_MATCH_SCORE' in df.columns:
+            chart_df = chart_df[chart_df['REVIEW_MATCH_SCORE'] >= match_threshold]
         
         # Apply other filters to charts too if they're not too restrictive
         if len(selected_colors) > 1:  # Only if multiple colors selected
@@ -461,10 +449,21 @@ def main():
                 display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 
                                'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type']
                 
+                # Only include columns that exist in the dataframe
+                display_cols = [col for col in display_cols if col in filtered_df.columns]
+                
                 # Rename columns for display
                 display_df = filtered_df[display_cols].copy()
-                display_df.columns = ['Wine Name', 'Variety', 'Color', 'Country', 
-                                     'Retail Sales ($)', 'Warehouse Sales ($)', 'Sparkling Type']
+                col_rename = {
+                    'WINE_NAME_EXTRACTED': 'Wine Name',
+                    'final_variety': 'Variety',
+                    'wine_color': 'Color',
+                    'final_country': 'Country',
+                    'RETAIL SALES': 'Retail Sales ($)',
+                    'WAREHOUSE SALES': 'Warehouse Sales ($)',
+                    'sparkling_type': 'Sparkling Type'
+                }
+                display_df.columns = [col_rename.get(col, col) for col in display_df.columns]
                 
                 st.dataframe(display_df.head(100), use_container_width=True)
                 
