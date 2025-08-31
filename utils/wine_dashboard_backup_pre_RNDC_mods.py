@@ -7,7 +7,7 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="Control State Wine Market Intelligence",
+    page_title="Wine Market Intelligence Dashboard",
     page_icon="🍷",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -40,6 +40,7 @@ st.markdown("""
 @st.cache_data
 def load_data():
     """Load and cache the wine data"""
+    # Update this path to match your actual data file
     df = pd.read_pickle('wine_data_fully_classified.pkl')
     
     # Convert month numbers to names for display
@@ -59,26 +60,26 @@ def load_data():
 
 def create_summary_metrics(df):
     """Create summary metrics for the top of dashboard"""
-    control_state_sales = df['RETAIL SALES'].sum()
-    licensed_retailer_sales = df['WAREHOUSE SALES'].sum()
-    inventory_transfers = df['RETAIL TRANSFERS'].sum()
-    total_market_value = control_state_sales + licensed_retailer_sales
-    unique_skus = df['ITEM CODE'].nunique()
+    total_sales = df['RETAIL SALES'].sum()
+    warehouse_sales = df['WAREHOUSE SALES'].sum()
+    total_wines = len(df)
     unique_varieties = df['final_variety'].nunique()
-    sparkling_volume = df['total_sparkling'].sum()
+    sparkling_count = df['total_sparkling'].sum()
+    red_sparkling_count = df['red_sparkling'].sum()
+    white_sparkling_count = df['white_sparkling'].sum()
     
     return {
-        'control_state_sales': control_state_sales,
-        'licensed_retailer_sales': licensed_retailer_sales,
-        'inventory_transfers': inventory_transfers,
-        'total_market_value': total_market_value,
-        'unique_skus': unique_skus,
+        'total_sales': total_sales,
+        'warehouse_sales': warehouse_sales,
+        'total_wines': total_wines,
         'unique_varieties': unique_varieties,
-        'sparkling_volume': sparkling_volume
+        'sparkling_count': sparkling_count,
+        'red_sparkling_count': red_sparkling_count,
+        'white_sparkling_count': white_sparkling_count
     }
 
 def create_monthly_trends_chart(df):
-    """Create monthly sales trends chart with Control State vs Licensed Retailer breakdown"""
+    """Create monthly sales trends chart with State Retail vs Independent Business sales"""
     monthly_data = df.groupby(['YEAR', 'month_name']).agg({
         'RETAIL SALES': 'sum',
         'WAREHOUSE SALES': 'sum'
@@ -99,116 +100,112 @@ def create_monthly_trends_chart(df):
     # Create figure with single y-axis (both are sales figures)
     fig = go.Figure()
     
-    # Add Control State Sales line
+    # Add State Retail Sales line
     fig.add_trace(
         go.Scatter(x=monthly_data['Date'], y=monthly_data['RETAIL SALES'], 
-                  name="Control State Depletions", line=dict(color='#8B0000', width=3),
-                  hovertemplate='<b>Control State Depletions</b><br>%{x}<br>%{y:,.0f} cases<extra></extra>')
+                  name="State Retail Sales", line=dict(color='#722F37', width=3),
+                  hovertemplate='<b>State Retail Sales</b><br>%{x}<br>$%{y:,.0f}<extra></extra>')
     )
     
-    # Add Licensed Retailer sales line
+    # Add Independent Business sales line
     fig.add_trace(
         go.Scatter(x=monthly_data['Date'], y=monthly_data['WAREHOUSE SALES'], 
-                  name="Off-Premise Channel", line=dict(color='#DEB887', width=3),
-                  hovertemplate='<b>Off-Premise Channel</b><br>%{x}<br>%{y:,.0f} cases<extra></extra>')
+                  name="Independent Businesses", line=dict(color='#8B4513', width=3),
+                  hovertemplate='<b>Independent Businesses</b><br>%{x}<br>$%{y:,.0f}<extra></extra>')
     )
     
     # Update layout
     fig.update_layout(
-        title="Monthly Sales Performance: Control State vs Off-Premise",
+        title="Monthly Sales Trends: State vs Independent Channel",
         height=400, 
         hovermode='x unified',
         xaxis_title="Date",
-        yaxis_title="Depletions (Cases)",
+        yaxis_title="Sales ($)",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
     return fig
 
 def create_variety_performance_chart(df, selected_varieties=None, top_n=15):
-    """Create top wine varieties performance chart OR top SKUs within selected varieties"""
+    """Create top wine varieties performance chart OR top wines within selected varieties"""
     
-    # If 2 or fewer varieties selected, show top SKUs within those varieties
+    # If 2 or fewer varieties selected, show top wines within those varieties
     if selected_varieties and len(selected_varieties) <= 2:
         # Filter to only the selected varieties
         variety_df = df[df['final_variety'].isin(selected_varieties)]
         
-        # Group by SKU and variety to show top individual products
-        sku_stats = variety_df.groupby(['WINE_NAME_EXTRACTED', 'final_variety']).agg({
+        # Group by wine name and variety to show top individual wines
+        wine_stats = variety_df.groupby(['WINE_NAME_EXTRACTED', 'final_variety']).agg({
             'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum',
-            'ITEM CODE': 'nunique'
+            'WAREHOUSE SALES': 'sum'
         }).reset_index()
         
-        # Calculate total depletions for ranking
-        sku_stats['Total_Depletions'] = sku_stats['RETAIL SALES'] + sku_stats['WAREHOUSE SALES']
-        sku_stats = sku_stats.sort_values('Total_Depletions', ascending=False).head(top_n)
+        # Sort by retail sales and take top wines
+        wine_stats = wine_stats.sort_values('RETAIL SALES', ascending=False).head(top_n)
         
-        # Create labels that show both SKU name and variety (for clarity when multiple varieties)
+        # Create labels that show both wine name and variety (for clarity when multiple varieties)
         if len(selected_varieties) == 1:
-            sku_stats['display_label'] = sku_stats['WINE_NAME_EXTRACTED']
-            chart_title = f"Top {len(sku_stats)} {selected_varieties[0]} Products by Total Depletions"
+            wine_stats['display_label'] = wine_stats['WINE_NAME_EXTRACTED']
+            chart_title = f"Top {len(wine_stats)} {selected_varieties[0]} Wines by Retail Sales"
         else:
-            sku_stats['display_label'] = sku_stats['WINE_NAME_EXTRACTED'] + ' (' + sku_stats['final_variety'] + ')'
-            chart_title = f"Top {len(sku_stats)} Products: {' & '.join(selected_varieties)}"
+            wine_stats['display_label'] = wine_stats['WINE_NAME_EXTRACTED'] + ' (' + wine_stats['final_variety'] + ')'
+            chart_title = f"Top {len(wine_stats)} Wines: {' & '.join(selected_varieties)}"
         
         fig = go.Figure()
         
-        # Add bar chart for individual SKUs
+        # Add bar chart for individual wines
         fig.add_trace(go.Bar(
-            x=sku_stats['Total_Depletions'],
-            y=sku_stats['display_label'],
+            x=wine_stats['RETAIL SALES'],
+            y=wine_stats['display_label'],
             orientation='h',
             marker_color='#722F37',
-            name='Total Depletions',
-            text=[f'{x:,.0f} cases' for x in sku_stats['Total_Depletions']],
+            name='Retail Sales',
+            text=[f'${x:,.0f}' for x in wine_stats['RETAIL SALES']],
             textposition='inside',
-            hovertemplate='<b>%{y}</b><br>Total Depletions: %{x:,.0f} cases<br>Control State: %{customdata[0]:,.0f} cases<br>Off-Premise: %{customdata[1]:,.0f} cases<extra></extra>',
-            customdata=list(zip(sku_stats['RETAIL SALES'], sku_stats['WAREHOUSE SALES']))
+            hovertemplate='<b>%{y}</b><br>Retail Sales: $%{x:,.0f}<extra></extra>'
         ))
         
         fig.update_layout(
             title=chart_title,
-            xaxis_title="Total Depletions (Cases)",
-            yaxis_title="Product SKU",
+            xaxis_title="Retail Sales ($)",
+            yaxis_title="Wine Name",
             height=600,
             yaxis={'categoryorder': 'total ascending'},
             showlegend=False
         )
         
     else:
-        # Default behavior: show top varieties by depletions
+        # Default behavior: show top varieties by sales
         variety_stats = df.groupby('final_variety').agg({
             'RETAIL SALES': 'sum',
             'WAREHOUSE SALES': 'sum',
-            'ITEM CODE': 'nunique'
+            'WINE_NAME_EXTRACTED': 'nunique'
         }).reset_index()
         
-        variety_stats['Total_Depletions'] = variety_stats['RETAIL SALES'] + variety_stats['WAREHOUSE SALES']
-        variety_stats = variety_stats.sort_values('Total_Depletions', ascending=False).head(top_n)
+        variety_stats = variety_stats.sort_values('RETAIL SALES', ascending=False).head(top_n)
         
         fig = go.Figure()
         
         # Add bar chart
         fig.add_trace(go.Bar(
-            x=variety_stats['Total_Depletions'],
+            x=variety_stats['RETAIL SALES'],
             y=variety_stats['final_variety'],
             orientation='h',
             marker_color='#722F37',
-            name='Total Depletions',
-            text=[f'{x:,.0f} cases' for x in variety_stats['Total_Depletions']],
+            name='Retail Sales',
+            text=[f'${x:,.0f}' for x in variety_stats['RETAIL SALES']],
             textposition='inside',
-            hovertemplate='<b>%{y}</b><br>Total Depletions: %{x:,.0f} cases<br>Unique SKUs: %{customdata}<extra></extra>',
-            customdata=variety_stats['ITEM CODE']
+            hovertemplate='<b>%{y}</b><br>Retail Sales: $%{x:,.0f}<br>Unique Wines: %{customdata}<extra></extra>',
+            customdata=variety_stats['WINE_NAME_EXTRACTED']
         ))
         
-        chart_title = f"Top {len(variety_stats)} Wine Varieties by Total Depletions"
+        chart_title = f"Top {len(variety_stats)} Wine Varieties by Retail Sales"
         if selected_varieties and len(selected_varieties) > 2:
             chart_title += f" (Filtered to {len(selected_varieties)} varieties)"
         
         fig.update_layout(
             title=chart_title,
-            xaxis_title="Total Depletions ($)",
+            xaxis_title="Retail Sales ($)",
             yaxis_title="Wine Variety",
             height=600,
             yaxis={'categoryorder': 'total ascending'},
@@ -218,99 +215,89 @@ def create_variety_performance_chart(df, selected_varieties=None, top_n=15):
     return fig
 
 def create_wine_color_chart(df, selected_colors=None):
-    """Create wine color market share OR country breakdown when 2 or fewer colors selected"""
+    """Create wine color distribution chart OR country breakdown when 2 or fewer colors selected"""
     
     # If 2 or fewer colors selected, show country breakdown instead
     if selected_colors and len(selected_colors) <= 2:
         country_data = df.groupby('final_country').agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum'
+            'RETAIL SALES': 'sum'
         }).reset_index()
-        
-        country_data['Total_Depletions'] = country_data['RETAIL SALES'] + country_data['WAREHOUSE SALES']
         
         # Filter out unclassified for cleaner pie chart
         country_data = country_data[country_data['final_country'] != 'Unclassified']
-        country_data = country_data.sort_values('Total_Depletions', ascending=False)
+        country_data = country_data.sort_values('RETAIL SALES', ascending=False)
         
         # Take top countries (combine smaller ones into "Other" if many countries)
         if len(country_data) > 8:
             top_countries = country_data.head(7)
-            other_depletions = country_data.tail(len(country_data) - 7)['Total_Depletions'].sum()
-            if other_depletions > 0:
-                other_row = pd.DataFrame({'final_country': ['Other'], 'Total_Depletions': [other_depletions]})
+            other_sales = country_data.tail(len(country_data) - 7)['RETAIL SALES'].sum()
+            if other_sales > 0:
+                other_row = pd.DataFrame({'final_country': ['Other'], 'RETAIL SALES': [other_sales]})
                 country_data = pd.concat([top_countries, other_row], ignore_index=True)
             else:
                 country_data = top_countries
         
         fig = px.pie(
             country_data,
-            values='Total_Depletions',
+            values='RETAIL SALES',
             names='final_country',
-            title="Market Share by Country of Origin",
+            title="Sales by Country of Origin",
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         
         # Update hover template for currency formatting
         fig.update_traces(
-            hovertemplate='<b>%{label}</b><br>Depletions: $%{value:,.0f}<br>Market Share: %{percent}<extra></extra>'
+            hovertemplate='<b>%{label}</b><br>Sales: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>'
         )
         
     else:
         # Default behavior: show wine color breakdown
         color_data = df.groupby('wine_color').agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum'
+            'RETAIL SALES': 'sum'
         }).reset_index()
-        
-        color_data['Total_Depletions'] = color_data['RETAIL SALES'] + color_data['WAREHOUSE SALES']
         
         fig = px.pie(
             color_data,
-            values='Total_Depletions',
+            values='RETAIL SALES',
             names='wine_color',
-            title="Market Share by Wine Category",
+            title="Sales by Wine Color",
             color_discrete_map={
                 'Red': '#722F37',
                 'White': '#F5F5DC', 
                 'Rosé': '#FF69B4',
-                'Other': '#808080',
-                'Unclassified': '#D3D3D3'
+                'Unclassified': '#808080'
             }
         )
         
         # Update hover template for currency formatting
         fig.update_traces(
-            hovertemplate='<b>%{label}</b><br>Depletions: $%{value:,.0f}<br>Market Share: %{percent}<extra></extra>'
+            hovertemplate='<b>%{label}</b><br>Sales: $%{value:,.0f}<br>Percentage: %{percent}<extra></extra>'
         )
     
     fig.update_layout(height=400)
     return fig
 
 def create_sparkling_analysis_chart(df):
-    """Create sparkling wine category breakdown chart"""
+    """Create sparkling wine breakdown chart"""
     sparkling_data = df[df['total_sparkling'] == True].groupby('sparkling_type').agg({
         'RETAIL SALES': 'sum',
-        'WAREHOUSE SALES': 'sum',
-        'ITEM CODE': 'nunique'
+        'WINE_NAME_EXTRACTED': 'nunique'
     }).reset_index()
     
     if len(sparkling_data) > 0:
-        sparkling_data['Total_Depletions'] = sparkling_data['RETAIL SALES'] + sparkling_data['WAREHOUSE SALES']
-        
         fig = px.bar(
             sparkling_data,
             x='sparkling_type',
-            y='Total_Depletions',
-            title="Sparkling Wine Category Performance",
+            y='RETAIL SALES',
+            title="Sparkling Wine Sales by Type",
             color='sparkling_type',
-            text='Total_Depletions'
+            text='RETAIL SALES'
         )
         
         fig.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
         fig.update_layout(height=400, showlegend=False)
-        fig.update_xaxes(title_text="Sparkling Category")
-        fig.update_yaxes(title_text="Total Depletions ($)")
+        fig.update_xaxes(title_text="Sparkling Type")
+        fig.update_yaxes(title_text="Retail Sales ($)")
         
         return fig
     else:
@@ -318,76 +305,76 @@ def create_sparkling_analysis_chart(df):
         fig = go.Figure()
         fig.add_annotation(text="No sparkling wine data available", 
                           xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(title="Sparkling Wine Category Performance", height=400)
+        fig.update_layout(title="Sparkling Wine Sales by Type", height=400)
         return fig
 
 def create_country_performance_chart(df):
-    """Create country performance chart with channel breakdown"""
+    """Create country performance chart"""
     country_data = df.groupby('final_country').agg({
         'RETAIL SALES': 'sum',
         'WAREHOUSE SALES': 'sum',
-        'ITEM CODE': 'nunique'
+        'WINE_NAME_EXTRACTED': 'nunique'
     }).reset_index()
     
     # Filter out unclassified countries and get top 10
     country_data = country_data[country_data['final_country'] != 'Unclassified']
-    country_data['Total_Depletions'] = country_data['RETAIL SALES'] + country_data['WAREHOUSE SALES']
-    country_data = country_data.sort_values('Total_Depletions', ascending=False).head(10)
+    country_data = country_data.sort_values('RETAIL SALES', ascending=False).head(10)
     
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
-    # Add control state sales bars
+    # Add retail sales bars
     fig.add_trace(
         go.Bar(x=country_data['final_country'], y=country_data['RETAIL SALES'],
-               name="Control State", marker_color='#722F37'),
+               name="Retail Sales", marker_color='#722F37'),
         secondary_y=False,
     )
     
-    # Add off-premise sales bars
+    # Add warehouse sales bars
     fig.add_trace(
         go.Bar(x=country_data['final_country'], y=country_data['WAREHOUSE SALES'],
-               name="Off-Premise", marker_color='#8B4513'),
+               name="Warehouse Sales", marker_color='#8B4513'),
         secondary_y=False,
     )
     
-    # Add unique SKUs line
+    # Add unique wines line
     fig.add_trace(
-        go.Scatter(x=country_data['final_country'], y=country_data['ITEM CODE'],
-                  mode='lines+markers', name="Unique SKUs", line=dict(color='orange', width=3)),
+        go.Scatter(x=country_data['final_country'], y=country_data['WINE_NAME_EXTRACTED'],
+                  mode='lines+markers', name="Unique Wines", line=dict(color='orange')),
         secondary_y=True,
     )
     
-    fig.update_layout(title="Top 10 Countries: Depletion Performance & SKU Diversity", height=400)
+    fig.update_layout(title="Top 10 Countries: Sales & Wine Variety", height=400)
     fig.update_xaxes(title_text="Country")
-    fig.update_yaxes(title_text="Depletions ($)", secondary_y=False)
-    fig.update_yaxes(title_text="Unique SKUs", secondary_y=True)
+    fig.update_yaxes(title_text="Sales ($)", secondary_y=False)
+    fig.update_yaxes(title_text="Unique Wines", secondary_y=True)
     
     return fig
 
-def create_business_summary(df):
-    """Create business summary with key performance indicators"""
-    summary_metrics = {
-        'Total SKUs': df['ITEM CODE'].nunique(),
-        'Active Varieties': len(df[df['final_variety'] != 'Unclassified']),
-        'Countries Represented': len(df[df['final_country'] != 'Unclassified']),
-        'Sparkling Portfolio': df['total_sparkling'].sum(),
-        'Premium Categories': len(df[df['final_variety'].isin(['Cabernet Sauvignon', 'Chardonnay', 'Pinot Noir', 'Sauvignon Blanc'])]),
-        'Market Coverage': f"{len(df['final_country'].unique())} countries"
+def create_data_quality_summary(df):
+    """Create data quality summary"""
+    quality_metrics = {
+        'Total Records': len(df),
+        'Unclassified Countries': len(df[df['final_country'] == 'Unclassified']),
+        'Unclassified Varieties': len(df[df['final_variety'] == 'Unclassified']),
+        'Unclassified Colors': len(df[df['wine_color'] == 'Unclassified']),
+        'Sparkling Wines': df['total_sparkling'].sum(),
+        'Red Sparkling': df['red_sparkling'].sum(),
+        'White Sparkling': df['white_sparkling'].sum()
     }
     
-    return summary_metrics
+    return quality_metrics
 
 def main():
     # Header
-    st.markdown('<h1 class="main-header">🍷 Control State Wine Market Intelligence</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Distribution Channel Performance & Category Analytics</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🍷 Wine Market Intelligence Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Montgomery County Wine Sales Analytics</p>', unsafe_allow_html=True)
     
     try:
         # Load data
         df = load_data()
         
         # SIDEBAR FILTERS
-        st.sidebar.header("📊 Market Analysis Filters")
+        st.sidebar.header("🔍 Filters")
         
         # Year filter
         years = sorted(df['YEAR'].unique())
@@ -398,29 +385,25 @@ def main():
                        'July', 'August', 'September', 'October', 'November', 'December'].index(x))
         selected_months = st.sidebar.multiselect("Months", months, default=months)
         
-        # Wine category filter
-        sparkling_choice = st.sidebar.radio("Category Focus", ["All Categories", "Sparkling Only", "Still Wine Only"])
+        # Wine type filter
+        sparkling_choice = st.sidebar.radio("Wine Type", ["All", "Sparkling Only", "Non-Sparkling Only"])
         
         # Sparkling type filter (only show if relevant)
-        if sparkling_choice in ["All Categories", "Sparkling Only"]:
+        if sparkling_choice in ["All", "Sparkling Only"]:
             sparkling_types = [t for t in df['sparkling_type'].unique() if t != 'not_sparkling']
-            selected_sparkling_types = st.sidebar.multiselect("Sparkling Categories", sparkling_types, default=sparkling_types)
+            selected_sparkling_types = st.sidebar.multiselect("Sparkling Types", sparkling_types, default=sparkling_types)
         
         # Wine color filter
         colors = sorted(df['wine_color'].unique())
-        selected_colors = st.sidebar.multiselect("Wine Categories", colors, default=colors)
+        selected_colors = st.sidebar.multiselect("Wine Colors", colors, default=colors)
         
-        # Variety filter - focus on top performers
-        top_varieties = df.groupby('final_variety').agg({'RETAIL SALES': 'sum', 'WAREHOUSE SALES': 'sum'})
-        top_varieties['Total'] = top_varieties['RETAIL SALES'] + top_varieties['WAREHOUSE SALES']
-        top_varieties = top_varieties.sort_values('Total', ascending=False).head(30).index.tolist()
-        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 30)", top_varieties, default=top_varieties[:15])
+        # Variety filter
+        top_varieties = df['final_variety'].value_counts().head(50).index.tolist()
+        selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 50)", top_varieties, default=top_varieties[:15])
         
-        # Country filter - focus on major markets
-        top_countries = df.groupby('final_country').agg({'RETAIL SALES': 'sum', 'WAREHOUSE SALES': 'sum'})
-        top_countries['Total'] = top_countries['RETAIL SALES'] + top_countries['WAREHOUSE SALES']
-        top_countries = top_countries.sort_values('Total', ascending=False).head(15).index.tolist()
-        selected_countries = st.sidebar.multiselect("Countries (Top 15)", top_countries, default=top_countries[:10])
+        # Country filter
+        top_countries = df['final_country'].value_counts().head(20).index.tolist()
+        selected_countries = st.sidebar.multiselect("Countries (Top 20)", top_countries, default=top_countries[:10])
         
         # APPLY FILTERS
         filtered_df = df.copy()
@@ -435,7 +418,7 @@ def main():
             filtered_df = filtered_df[filtered_df['total_sparkling'] == True]
             if 'selected_sparkling_types' in locals():
                 filtered_df = filtered_df[filtered_df['sparkling_type'].isin(selected_sparkling_types)]
-        elif sparkling_choice == "Still Wine Only":
+        elif sparkling_choice == "Non-Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == False]
         
         if selected_colors:
@@ -447,46 +430,63 @@ def main():
         if selected_countries:
             filtered_df = filtered_df[filtered_df['final_country'].isin(selected_countries)]
         
-        # Create chart data (use filtered data for all charts)
-        chart_df = filtered_df.copy()
+        # Create chart data (less restrictive for better insights)
+        chart_df = df.copy()
         
-        # Show filtering results with business terminology and data quality context
-        metrics = create_summary_metrics(filtered_df)
-        st.write(f"📈 **Market Analysis:** {len(filtered_df):,} depletion records (of {len(df):,} total) | **Total Case Volume:** {metrics['total_market_value']:,.0f} cases | **SKU Portfolio:** {metrics['unique_skus']:,} products")
+        # Apply core filters only
+        if selected_years:
+            chart_df = chart_df[chart_df['YEAR'].isin(selected_years)]
+            
+        if selected_months:
+            chart_df = chart_df[chart_df['month_name'].isin(selected_months)]
+            
+        if sparkling_choice == "Sparkling Only":
+            chart_df = chart_df[chart_df['total_sparkling'] == True]
+        elif sparkling_choice == "Non-Sparkling Only":
+            chart_df = chart_df[chart_df['total_sparkling'] == False]
+        
+        # Apply other filters to charts too if they're not too restrictive
+        if len(selected_colors) > 1:  # Only if multiple colors selected
+            chart_df = chart_df[chart_df['wine_color'].isin(selected_colors)]
+        
+        # Show filtering results
+        st.write(f"📊 **Filtered Data:** {len(filtered_df):,} records | **Chart Data:** {len(chart_df):,} records | **Total:** {len(df):,}")
         
         if len(filtered_df) > 0:
-            # Business summary metrics
-            with st.expander("📋 Market Portfolio Summary"):
-                business_summary = create_business_summary(filtered_df)
+            # Data quality summary
+            with st.expander("📋 Data Quality Summary"):
+                quality_metrics = create_data_quality_summary(filtered_df)
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    st.metric("Total SKUs", f"{business_summary['Total SKUs']:,}")
-                    st.metric("Active Varieties", f"{business_summary['Active Varieties']:,}")
+                    st.metric("Total Records", f"{quality_metrics['Total Records']:,}")
+                    st.metric("Sparkling Wines", f"{quality_metrics['Sparkling Wines']:,}")
                 
                 with col2:
-                    st.metric("Countries Represented", f"{business_summary['Countries Represented']:,}")
-                    st.metric("Sparkling Portfolio", f"{business_summary['Sparkling Portfolio']:,}")
+                    st.metric("Unclassified Countries", f"{quality_metrics['Unclassified Countries']:,}")
+                    st.metric("Red Sparkling", f"{quality_metrics['Red Sparkling']:,}")
                 
                 with col3:
-                    st.metric("Premium Varieties", f"{business_summary['Premium Categories']:,}")
-                    st.write(f"**Market Coverage:** {business_summary['Market Coverage']}")
+                    st.metric("Unclassified Varieties", f"{quality_metrics['Unclassified Varieties']:,}")
+                    st.metric("White Sparkling", f"{quality_metrics['White Sparkling']:,}")
             
-            # Main performance metrics
+            # Main metrics
+            metrics = create_summary_metrics(filtered_df)
+            
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.metric("Control State Depletions", f"{metrics['control_state_sales']:,.0f} cases")
+                st.metric("Retail Sales", f"${metrics['total_sales']:,.0f}")
             with col2:
-                st.metric("Off-Premise Depletions", f"{metrics['licensed_retailer_sales']:,.0f} cases")
+                st.metric("Warehouse Sales", f"${metrics['warehouse_sales']:,.0f}")
             with col3:
-                st.metric("Inventory Transfers", f"{metrics['inventory_transfers']:,.0f} cases")
+                st.metric("Total Records", f"{metrics['total_wines']:,}")
             with col4:
-                st.metric("Unique SKUs", f"{metrics['unique_skus']:,}")
+                st.metric("Unique Varieties", f"{metrics['unique_varieties']:,}")
             with col5:
-                st.metric("Sparkling Volume", f"{metrics['sparkling_volume']:,} cases")
+                st.metric("Sparkling Wines", f"{metrics['sparkling_count']:,}")
             
             # Charts
-            st.subheader("📊 Market Performance & Category Analysis")
+            st.subheader("📈 Sales Trends & Analysis")
             
             col1, col2 = st.columns(2)
             
@@ -514,30 +514,30 @@ def main():
                 sparkling_chart = create_sparkling_analysis_chart(chart_df)
                 st.plotly_chart(sparkling_chart, use_container_width=True)
             
-            # Data table with business context
-            with st.expander("🔍 View Market Data Details"):
-                # Show key columns with business-friendly names
+            # Data table
+            with st.expander("🔍 View Filtered Data"):
+                # Show key columns only - user-friendly names
                 display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 
-                               'RETAIL SALES', 'WAREHOUSE SALES', 'RETAIL TRANSFERS']
+                               'RETAIL SALES', 'WAREHOUSE SALES', 'sparkling_type']
                 
-                # Rename columns for business users
+                # Rename columns for display
                 display_df = filtered_df[display_cols].copy()
-                display_df.columns = ['Product Name', 'Variety', 'Category', 'Country', 
-                                     'Control State ($)', 'Off-Premise ($)', 'Transfers ($)']
+                display_df.columns = ['Wine Name', 'Variety', 'Color', 'Country', 
+                                     'Retail Sales ($)', 'Warehouse Sales ($)', 'Sparkling Type']
                 
                 st.dataframe(display_df.head(100), use_container_width=True)
                 
                 if len(filtered_df) > 100:
-                    st.info(f"Showing first 100 of {len(filtered_df):,} depletion records")
+                    st.info(f"Showing first 100 of {len(filtered_df):,} records")
             
         else:
-            st.warning("⚠️ No market data matches your current filter selection. Try expanding your criteria.")
+            st.warning("❌ No data matches your current filters. Try expanding your selection!")
             
     except FileNotFoundError:
         st.error("❌ Data file not found. Please check the file path in the load_data() function.")
     except Exception as e:
-        st.error(f"❌ Error loading market data: {str(e)}")
-        st.info("Please verify data file format and column structure.")
+        st.error(f"❌ Error loading data: {str(e)}")
+        st.info("Please check your data file format and column names.")
 
 if __name__ == "__main__":
     main()
