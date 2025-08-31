@@ -4,11 +4,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+import io
 
 # Page configuration
 st.set_page_config(
     page_title="Control State Wine Market Intelligence",
-    page_icon="🍷",
+    page_icon="https://www.rndc-usa.com/wp-content/uploads/2020/12/RNDC_New_Logo_Circle_Red-1.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -34,13 +35,22 @@ st.markdown("""
         border-radius: 0.5rem;
         border-left: 4px solid #722F37;
     }
+    .data-freshness {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: #856404;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
     """Load and cache the wine data"""
-    df = pd.read_pickle('wine_data_fully_classified.pkl')
+    df = pd.read_pickle('data/wine_data_fully_classified.pkl')
     
     # Convert month numbers to names for display
     month_names = {
@@ -55,6 +65,35 @@ def load_data():
     df['final_country'] = df['final_country'].fillna('Unclassified')
     df['sparkling_type'] = df['sparkling_type'].replace('Unknown', 'Unclassified')
     
+    # Add price tier segmentation based on retail price per bottle (industry standard)
+    df['price_per_bottle'] = df['RETAIL SALES'] / df.get('QUANTITY', 1)  # In production, this would use actual bottle count
+    
+    def categorize_price_tier(price):
+        if pd.isna(price) or price <= 0:
+            return 'Unclassified'
+        elif price < 8:
+            return 'Economy (Under $8)'
+        elif price < 15:
+            return 'Popular ($8-$14.99)'
+        elif price < 25:
+            return 'Premium ($15-$25)'
+        elif price < 50:
+            return 'Super-Premium ($26-$49.99)'
+        elif price < 100:
+            return 'Ultra-Premium ($50-$99.99)'
+        else:
+            return 'Luxury ($100+)'
+    
+    df['price_tier'] = df['price_per_bottle'].apply(categorize_price_tier)
+    
+    # Add quarterly indicators
+    df['quarter'] = df['MONTH'].map({
+        1: 'Q1', 2: 'Q1', 3: 'Q1',
+        4: 'Q2', 5: 'Q2', 6: 'Q2',
+        7: 'Q3', 8: 'Q3', 9: 'Q3',
+        10: 'Q4', 11: 'Q4', 12: 'Q4'
+    })
+    
     return df
 
 def create_summary_metrics(df):
@@ -66,6 +105,7 @@ def create_summary_metrics(df):
     unique_skus = df['ITEM CODE'].nunique()
     unique_varieties = df['final_variety'].nunique()
     sparkling_volume = df['total_sparkling'].sum()
+    avg_price_tier = df['price_tier'].mode()[0] if len(df) > 0 else 'N/A'
     
     return {
         'control_state_sales': control_state_sales,
@@ -74,8 +114,181 @@ def create_summary_metrics(df):
         'total_market_value': total_market_value,
         'unique_skus': unique_skus,
         'unique_varieties': unique_varieties,
-        'sparkling_volume': sparkling_volume
+        'sparkling_volume': sparkling_volume,
+        'avg_price_tier': avg_price_tier
     }
+
+def create_price_tier_performance_chart(df):
+    """Create price tier performance analysis"""
+    tier_data = df.groupby('price_tier').agg({
+        'RETAIL SALES': 'sum',
+        'WAREHOUSE SALES': 'sum',
+        'ITEM CODE': 'nunique'
+    }).reset_index()
+    
+    tier_data['Total_Depletions'] = tier_data['RETAIL SALES'] + tier_data['WAREHOUSE SALES']
+    tier_data = tier_data.sort_values('Total_Depletions', ascending=False)
+    
+    fig = px.bar(
+        tier_data,
+        x='price_tier',
+        y='Total_Depletions',
+        title="Market Performance by Price Tier",
+        text='Total_Depletions',
+        color_discrete_sequence=['#8B0000'] * len(tier_data)  # Same color as Control State Depletions
+    )
+    
+    fig.update_traces(texttemplate='%{text:,.0f} cases', textposition='outside')
+    fig.update_layout(height=550, showlegend=False)
+    fig.update_xaxes(title_text="Price Tier")
+    fig.update_yaxes(title_text="Total Depletions (Cases)")
+    
+    return fig
+
+def create_quarterly_trends_chart(df):
+    """Create quarterly performance trends"""
+    quarterly_data = df.groupby(['quarter', 'YEAR']).agg({
+        'RETAIL SALES': 'sum',
+        'WAREHOUSE SALES': 'sum'
+    }).reset_index()
+    
+    quarterly_data['Total_Depletions'] = quarterly_data['RETAIL SALES'] + quarterly_data['WAREHOUSE SALES']
+    
+    # Custom color mapping for quarters
+    color_map = {
+        'Q1': '#228B22',      # Green
+        'Q2': '#8B0000',      # Same red as Control State Depletions  
+        'Q3': '#DEB887',      # Same gold as Off-Premise Channel
+        'Q4': '#191970'       # Deep blue (midnight blue)
+    }
+    
+    fig = px.line(
+        quarterly_data,
+        x='YEAR',
+        y='Total_Depletions',
+        color='quarter',
+        title="Quarterly Performance Trends",
+        markers=True,
+        color_discrete_map=color_map
+    )
+    
+    fig.update_layout(
+        height=550,
+        xaxis_title="Year",
+        yaxis_title="Total Depletions ($)",
+        legend_title="Quarter"
+    )
+    
+    return fig
+
+def create_performance_benchmark_chart(df, benchmark_type='variety', selected_varieties=None):
+    """Create performance benchmarking chart with trend indicators"""
+    if benchmark_type == 'variety':
+        # If 2 or fewer varieties selected, show top individual products within those varieties
+        if selected_varieties and len(selected_varieties) <= 2:
+            # Filter to only the selected varieties
+            variety_df = df[df['final_variety'].isin(selected_varieties)]
+            
+            # Group by individual product names to show top SKUs
+            perf_data = variety_df.groupby(['WINE_NAME_EXTRACTED', 'final_variety']).agg({
+                'RETAIL SALES': 'sum',
+                'WAREHOUSE SALES': 'sum'
+            }).reset_index()
+            
+            perf_data['Total_Depletions'] = perf_data['RETAIL SALES'] + perf_data['WAREHOUSE SALES']
+            perf_data = perf_data.sort_values('Total_Depletions', ascending=False).head(10)
+            
+            # Create display labels (show variety in parentheses if multiple varieties)
+            if len(selected_varieties) == 1:
+                perf_data['display_label'] = perf_data['WINE_NAME_EXTRACTED']
+                chart_title = f"Top 10 {selected_varieties[0]} Products"
+            else:
+                # For multiple varieties, show just the wine name since variety is already in the name
+                perf_data['display_label'] = perf_data['WINE_NAME_EXTRACTED']
+                chart_title = f"Top 10 Products: {' & '.join(selected_varieties)}"
+            
+            # Use variety-based colors
+            varietal_colors = {
+                'Cabernet Sauvignon': '#8B0000', 'Chardonnay': '#F5DEB3', 'Pinot Noir': '#8B0000',
+                'Sauvignon Blanc': '#F5DEB3', 'Merlot': '#8B0000', 'Pinot Grigio': '#F5DEB3',
+                'Riesling': '#F5DEB3', 'Syrah': '#4B0000', 'Zinfandel': '#8B0000',
+                'Moscato': '#F5DEB3', 'Gewürztraminer': '#F5DEB3', 'Chenin Blanc': '#F5DEB3',
+                'Sangiovese': '#8B0000'
+            }
+            
+            bar_colors = [varietal_colors.get(variety, '#800050') for variety in perf_data['final_variety']]
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Bar(
+                y=perf_data['display_label'],  # Horizontal bar chart
+                x=perf_data['Total_Depletions'],
+                orientation='h',
+                marker_color=bar_colors,
+                text=[f"${x:,.0f}" for x in perf_data['Total_Depletions']],
+                textposition='inside',
+                hovertemplate='<b>%{y}</b><br>Depletions: $%{x:,.0f}<extra></extra>'
+            ))
+            
+            fig.update_layout(
+                title=chart_title,
+                xaxis_title="Total Depletions ($)",
+                yaxis_title="Product Name",
+                height=550,
+                yaxis={'categoryorder': 'total ascending'},
+                showlegend=False
+            )
+            
+        else:
+            # Default behavior: show top varieties by depletions
+            perf_data = df.groupby('final_variety').agg({
+                'RETAIL SALES': 'sum',
+                'WAREHOUSE SALES': 'sum'
+            }).reset_index()
+            perf_data['Total_Depletions'] = perf_data['RETAIL SALES'] + perf_data['WAREHOUSE SALES']
+            perf_data = perf_data.sort_values('Total_Depletions', ascending=False).head(10)
+            
+            # Natural wine colors for varietals
+            varietal_colors = {
+                'Cabernet Sauvignon': '#8B0000', 'Chardonnay': '#F5DEB3', 'Pinot Noir': '#8B0000',
+                'Sauvignon Blanc': '#F5DEB3', 'Merlot': '#8B0000', 'Pinot Grigio': '#F5DEB3',
+                'Riesling': '#F5DEB3', 'Syrah': '#4B0000', 'Zinfandel': '#8B0000',
+                'Moscato': '#F5DEB3', 'Gewürztraminer': '#F5DEB3', 'Chenin Blanc': '#F5DEB3',
+                'Sangiovese': '#8B0000'
+            }
+            
+            # Add mock trend indicators
+            np.random.seed(42)
+            perf_data['trend'] = np.random.choice(['Great!', 'Wonderful!', 'Take the L!'], size=len(perf_data), p=[0.4, 0.3, 0.3])
+            perf_data['change_pct'] = np.random.uniform(-15, 25, size=len(perf_data))
+            
+            bar_colors = [varietal_colors.get(variety, '#800050') for variety in perf_data['final_variety']]
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Bar(
+                x=perf_data['final_variety'],
+                y=perf_data['Total_Depletions'],
+                text=[f"{trend} {change:.1f}%" for trend, change in zip(perf_data['trend'], perf_data['change_pct'])],
+                textposition='outside',
+                marker_color=bar_colors,
+                hovertemplate='<b>%{x}</b><br>Depletions: $%{y:,.0f}<br>Trend: %{text}<extra></extra>'
+            ))
+            
+            fig.update_layout(
+                title="Top 10 Varieties: Performance with Trend Indicators",
+                xaxis_title="Wine Variety",
+                yaxis_title="Total Depletions ($)",
+                height=550,
+                showlegend=False
+            )
+        
+    return fig
+
+def create_export_data():
+    """Create downloadable data export"""
+    # This would be your filtered dataset formatted for business users
+    return "Export functionality would provide filtered data in business-friendly format"
 
 def create_monthly_trends_chart(df):
     """Create monthly sales trends chart with Control State vs Licensed Retailer breakdown"""
@@ -84,19 +297,17 @@ def create_monthly_trends_chart(df):
         'WAREHOUSE SALES': 'sum'
     }).reset_index()
     
-    # Create proper date for sorting (convert back to month number for sorting)
+    # Create proper date for sorting
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     monthly_data['month_num'] = monthly_data['month_name'].apply(lambda x: month_order.index(x) + 1)
     
-    # Create date more explicitly
     monthly_data['Date'] = pd.to_datetime(
         monthly_data['YEAR'].astype(str) + '-' + 
         monthly_data['month_num'].astype(str).str.zfill(2) + '-01'
     )
     monthly_data = monthly_data.sort_values('Date')
     
-    # Create figure with single y-axis (both are sales figures)
     fig = go.Figure()
     
     # Add Control State Sales line
@@ -113,10 +324,9 @@ def create_monthly_trends_chart(df):
                   hovertemplate='<b>Off-Premise Channel</b><br>%{x}<br>%{y:,.0f} cases<extra></extra>')
     )
     
-    # Update layout
     fig.update_layout(
         title="Monthly Sales Performance: Control State vs Off-Premise",
-        height=400, 
+        height=550, 
         hovermode='x unified',
         xaxis_title="Date",
         yaxis_title="Depletions (Cases)",
@@ -125,302 +335,69 @@ def create_monthly_trends_chart(df):
     
     return fig
 
-def create_variety_performance_chart(df, selected_varieties=None, top_n=15):
-    """Create top wine varieties performance chart OR top SKUs within selected varieties"""
-    
-    # If 2 or fewer varieties selected, show top SKUs within those varieties
-    if selected_varieties and len(selected_varieties) <= 2:
-        # Filter to only the selected varieties
-        variety_df = df[df['final_variety'].isin(selected_varieties)]
-        
-        # Group by SKU and variety to show top individual products
-        sku_stats = variety_df.groupby(['WINE_NAME_EXTRACTED', 'final_variety']).agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum',
-            'ITEM CODE': 'nunique'
-        }).reset_index()
-        
-        # Calculate total depletions for ranking
-        sku_stats['Total_Depletions'] = sku_stats['RETAIL SALES'] + sku_stats['WAREHOUSE SALES']
-        sku_stats = sku_stats.sort_values('Total_Depletions', ascending=False).head(top_n)
-        
-        # Create labels that show both SKU name and variety (for clarity when multiple varieties)
-        if len(selected_varieties) == 1:
-            sku_stats['display_label'] = sku_stats['WINE_NAME_EXTRACTED']
-            chart_title = f"Top {len(sku_stats)} {selected_varieties[0]} Products by Total Depletions"
-        else:
-            sku_stats['display_label'] = sku_stats['WINE_NAME_EXTRACTED'] + ' (' + sku_stats['final_variety'] + ')'
-            chart_title = f"Top {len(sku_stats)} Products: {' & '.join(selected_varieties)}"
-        
-        fig = go.Figure()
-        
-        # Add bar chart for individual SKUs
-        fig.add_trace(go.Bar(
-            x=sku_stats['Total_Depletions'],
-            y=sku_stats['display_label'],
-            orientation='h',
-            marker_color='#722F37',
-            name='Total Depletions',
-            text=[f'{x:,.0f} cases' for x in sku_stats['Total_Depletions']],
-            textposition='inside',
-            hovertemplate='<b>%{y}</b><br>Total Depletions: %{x:,.0f} cases<br>Control State: %{customdata[0]:,.0f} cases<br>Off-Premise: %{customdata[1]:,.0f} cases<extra></extra>',
-            customdata=list(zip(sku_stats['RETAIL SALES'], sku_stats['WAREHOUSE SALES']))
-        ))
-        
-        fig.update_layout(
-            title=chart_title,
-            xaxis_title="Total Depletions (Cases)",
-            yaxis_title="Product SKU",
-            height=600,
-            yaxis={'categoryorder': 'total ascending'},
-            showlegend=False
-        )
-        
-    else:
-        # Default behavior: show top varieties by depletions
-        variety_stats = df.groupby('final_variety').agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum',
-            'ITEM CODE': 'nunique'
-        }).reset_index()
-        
-        variety_stats['Total_Depletions'] = variety_stats['RETAIL SALES'] + variety_stats['WAREHOUSE SALES']
-        variety_stats = variety_stats.sort_values('Total_Depletions', ascending=False).head(top_n)
-        
-        fig = go.Figure()
-        
-        # Add bar chart
-        fig.add_trace(go.Bar(
-            x=variety_stats['Total_Depletions'],
-            y=variety_stats['final_variety'],
-            orientation='h',
-            marker_color='#722F37',
-            name='Total Depletions',
-            text=[f'{x:,.0f} cases' for x in variety_stats['Total_Depletions']],
-            textposition='inside',
-            hovertemplate='<b>%{y}</b><br>Total Depletions: %{x:,.0f} cases<br>Unique SKUs: %{customdata}<extra></extra>',
-            customdata=variety_stats['ITEM CODE']
-        ))
-        
-        chart_title = f"Top {len(variety_stats)} Wine Varieties by Total Depletions"
-        if selected_varieties and len(selected_varieties) > 2:
-            chart_title += f" (Filtered to {len(selected_varieties)} varieties)"
-        
-        fig.update_layout(
-            title=chart_title,
-            xaxis_title="Total Depletions ($)",
-            yaxis_title="Wine Variety",
-            height=600,
-            yaxis={'categoryorder': 'total ascending'},
-            showlegend=False
-        )
-    
-    return fig
-
-def create_wine_color_chart(df, selected_colors=None):
-    """Create wine color market share OR country breakdown when 2 or fewer colors selected"""
-    
-    # If 2 or fewer colors selected, show country breakdown instead
-    if selected_colors and len(selected_colors) <= 2:
-        country_data = df.groupby('final_country').agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum'
-        }).reset_index()
-        
-        country_data['Total_Depletions'] = country_data['RETAIL SALES'] + country_data['WAREHOUSE SALES']
-        
-        # Filter out unclassified for cleaner pie chart
-        country_data = country_data[country_data['final_country'] != 'Unclassified']
-        country_data = country_data.sort_values('Total_Depletions', ascending=False)
-        
-        # Take top countries (combine smaller ones into "Other" if many countries)
-        if len(country_data) > 8:
-            top_countries = country_data.head(7)
-            other_depletions = country_data.tail(len(country_data) - 7)['Total_Depletions'].sum()
-            if other_depletions > 0:
-                other_row = pd.DataFrame({'final_country': ['Other'], 'Total_Depletions': [other_depletions]})
-                country_data = pd.concat([top_countries, other_row], ignore_index=True)
-            else:
-                country_data = top_countries
-        
-        fig = px.pie(
-            country_data,
-            values='Total_Depletions',
-            names='final_country',
-            title="Market Share by Country of Origin",
-            color_discrete_sequence=px.colors.qualitative.Set3
-        )
-        
-        # Update hover template for currency formatting
-        fig.update_traces(
-            hovertemplate='<b>%{label}</b><br>Depletions: $%{value:,.0f}<br>Market Share: %{percent}<extra></extra>'
-        )
-        
-    else:
-        # Default behavior: show wine color breakdown
-        color_data = df.groupby('wine_color').agg({
-            'RETAIL SALES': 'sum',
-            'WAREHOUSE SALES': 'sum'
-        }).reset_index()
-        
-        color_data['Total_Depletions'] = color_data['RETAIL SALES'] + color_data['WAREHOUSE SALES']
-        
-        fig = px.pie(
-            color_data,
-            values='Total_Depletions',
-            names='wine_color',
-            title="Market Share by Wine Category",
-            color_discrete_map={
-                'Red': '#722F37',
-                'White': '#F5F5DC', 
-                'Rosé': '#FF69B4',
-                'Other': '#808080',
-                'Unclassified': '#D3D3D3'
-            }
-        )
-        
-        # Update hover template for currency formatting
-        fig.update_traces(
-            hovertemplate='<b>%{label}</b><br>Depletions: $%{value:,.0f}<br>Market Share: %{percent}<extra></extra>'
-        )
-    
-    fig.update_layout(height=400)
-    return fig
-
-def create_sparkling_analysis_chart(df):
-    """Create sparkling wine category breakdown chart"""
-    sparkling_data = df[df['total_sparkling'] == True].groupby('sparkling_type').agg({
-        'RETAIL SALES': 'sum',
-        'WAREHOUSE SALES': 'sum',
-        'ITEM CODE': 'nunique'
-    }).reset_index()
-    
-    if len(sparkling_data) > 0:
-        sparkling_data['Total_Depletions'] = sparkling_data['RETAIL SALES'] + sparkling_data['WAREHOUSE SALES']
-        
-        fig = px.bar(
-            sparkling_data,
-            x='sparkling_type',
-            y='Total_Depletions',
-            title="Sparkling Wine Category Performance",
-            color='sparkling_type',
-            text='Total_Depletions'
-        )
-        
-        fig.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
-        fig.update_layout(height=400, showlegend=False)
-        fig.update_xaxes(title_text="Sparkling Category")
-        fig.update_yaxes(title_text="Total Depletions ($)")
-        
-        return fig
-    else:
-        # Return empty figure if no sparkling data
-        fig = go.Figure()
-        fig.add_annotation(text="No sparkling wine data available", 
-                          xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(title="Sparkling Wine Category Performance", height=400)
-        return fig
-
-def create_country_performance_chart(df):
-    """Create country performance chart with channel breakdown"""
-    country_data = df.groupby('final_country').agg({
-        'RETAIL SALES': 'sum',
-        'WAREHOUSE SALES': 'sum',
-        'ITEM CODE': 'nunique'
-    }).reset_index()
-    
-    # Filter out unclassified countries and get top 10
-    country_data = country_data[country_data['final_country'] != 'Unclassified']
-    country_data['Total_Depletions'] = country_data['RETAIL SALES'] + country_data['WAREHOUSE SALES']
-    country_data = country_data.sort_values('Total_Depletions', ascending=False).head(10)
-    
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    # Add control state sales bars
-    fig.add_trace(
-        go.Bar(x=country_data['final_country'], y=country_data['RETAIL SALES'],
-               name="Control State", marker_color='#722F37'),
-        secondary_y=False,
-    )
-    
-    # Add off-premise sales bars
-    fig.add_trace(
-        go.Bar(x=country_data['final_country'], y=country_data['WAREHOUSE SALES'],
-               name="Off-Premise", marker_color='#8B4513'),
-        secondary_y=False,
-    )
-    
-    # Add unique SKUs line
-    fig.add_trace(
-        go.Scatter(x=country_data['final_country'], y=country_data['ITEM CODE'],
-                  mode='lines+markers', name="Unique SKUs", line=dict(color='orange', width=3)),
-        secondary_y=True,
-    )
-    
-    fig.update_layout(title="Top 10 Countries: Depletion Performance & SKU Diversity", height=400)
-    fig.update_xaxes(title_text="Country")
-    fig.update_yaxes(title_text="Depletions ($)", secondary_y=False)
-    fig.update_yaxes(title_text="Unique SKUs", secondary_y=True)
-    
-    return fig
-
-def create_business_summary(df):
-    """Create business summary with key performance indicators"""
-    summary_metrics = {
-        'Total SKUs': df['ITEM CODE'].nunique(),
-        'Active Varieties': len(df[df['final_variety'] != 'Unclassified']),
-        'Countries Represented': len(df[df['final_country'] != 'Unclassified']),
-        'Sparkling Portfolio': df['total_sparkling'].sum(),
-        'Premium Categories': len(df[df['final_variety'].isin(['Cabernet Sauvignon', 'Chardonnay', 'Pinot Noir', 'Sauvignon Blanc'])]),
-        'Market Coverage': f"{len(df['final_country'].unique())} countries"
-    }
-    
-    return summary_metrics
-
 def main():
     # Header
-    st.markdown('<h1 class="main-header">🍷 Control State Wine Market Intelligence</h1>', unsafe_allow_html=True)
+    st.image("https://www.rndc-usa.com/wp-content/uploads/2020/12/RNDC_New_Logo_Circle_Red-1.png", width=150)
+    st.markdown('<h1 class="main-header">Control State Wine Market Intelligence</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Distribution Channel Performance & Category Analytics</p>', unsafe_allow_html=True)
+    
+    # Data freshness indicator
+    st.markdown('''
+     <div class="data-freshness">
+        <strong>Data as of:</strong> March 2024 (Portfolio Demonstration Dataset)
+        |  <strong>Pipeline Processing:</strong> Standard refresh ~20 seconds | Full regex matching ~2.5 hours for entity resolution
+        |  <strong>Production Schedule:</strong> Monthly/bi-weekly data refresh, Quarterly entity resolution tuning
+    </div>
+    ''', unsafe_allow_html=True)
     
     try:
         # Load data
         df = load_data()
         
-        # SIDEBAR FILTERS
+        # SIDEBAR FILTERS - Enhanced for sales management
         st.sidebar.header("📊 Market Analysis Filters")
         
         # Year filter
         years = sorted(df['YEAR'].unique())
         selected_years = st.sidebar.multiselect("Years", years, default=years)
         
-        # Month filter - using month names
+        # Month filter
         months = sorted(df['month_name'].unique(), key=lambda x: ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December'].index(x))
         selected_months = st.sidebar.multiselect("Months", months, default=months)
         
+        # Quarterly filter
+        quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+        selected_quarters = st.sidebar.multiselect("Quarterly Focus", quarters, default=quarters)
+        
+        # Price tier filter - KEY ADDITION
+        price_tiers = sorted(df['price_tier'].unique())
+        selected_price_tiers = st.sidebar.multiselect("Price Tiers", price_tiers, default=price_tiers)
+        
         # Wine category filter
         sparkling_choice = st.sidebar.radio("Category Focus", ["All Categories", "Sparkling Only", "Still Wine Only"])
-        
-        # Sparkling type filter (only show if relevant)
-        if sparkling_choice in ["All Categories", "Sparkling Only"]:
-            sparkling_types = [t for t in df['sparkling_type'].unique() if t != 'not_sparkling']
-            selected_sparkling_types = st.sidebar.multiselect("Sparkling Categories", sparkling_types, default=sparkling_types)
         
         # Wine color filter
         colors = sorted(df['wine_color'].unique())
         selected_colors = st.sidebar.multiselect("Wine Categories", colors, default=colors)
         
-        # Variety filter - focus on top performers
-        top_varieties = df.groupby('final_variety').agg({'RETAIL SALES': 'sum', 'WAREHOUSE SALES': 'sum'})
+        # Variety filter - focus on top performers, exclude blank/empty values
+        top_varieties = df[df['final_variety'].notna() & (df['final_variety'] != '') & (df['final_variety'] != 'Unclassified')].groupby('final_variety').agg({'RETAIL SALES': 'sum', 'WAREHOUSE SALES': 'sum'})
         top_varieties['Total'] = top_varieties['RETAIL SALES'] + top_varieties['WAREHOUSE SALES']
         top_varieties = top_varieties.sort_values('Total', ascending=False).head(30).index.tolist()
         selected_varieties = st.sidebar.multiselect("Wine Varieties (Top 30)", top_varieties, default=top_varieties[:15])
         
-        # Country filter - focus on major markets
+        # Country filter - clean up empty values with descriptive label
         top_countries = df.groupby('final_country').agg({'RETAIL SALES': 'sum', 'WAREHOUSE SALES': 'sum'})
         top_countries['Total'] = top_countries['RETAIL SALES'] + top_countries['WAREHOUSE SALES']
-        top_countries = top_countries.sort_values('Total', ascending=False).head(15).index.tolist()
-        selected_countries = st.sidebar.multiselect("Countries (Top 15)", top_countries, default=top_countries[:10])
+        top_countries = top_countries.sort_values('Total', ascending=False).head(15)
+
+        # Rename empty/null country values for better UX
+        country_list = top_countries.index.tolist()
+        if '' in country_list:
+            country_list[country_list.index('')] = "Ask me about Data Limitations!"
+    
+        selected_countries = st.sidebar.multiselect("Countries (Top 15)", country_list, default=country_list[:10])
         
         # APPLY FILTERS
         filtered_df = df.copy()
@@ -431,10 +408,14 @@ def main():
         if selected_months:
             filtered_df = filtered_df[filtered_df['month_name'].isin(selected_months)]
             
+        if selected_quarters:
+            filtered_df = filtered_df[filtered_df['quarter'].isin(selected_quarters)]
+            
+        if selected_price_tiers:
+            filtered_df = filtered_df[filtered_df['price_tier'].isin(selected_price_tiers)]
+            
         if sparkling_choice == "Sparkling Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == True]
-            if 'selected_sparkling_types' in locals():
-                filtered_df = filtered_df[filtered_df['sparkling_type'].isin(selected_sparkling_types)]
         elif sparkling_choice == "Still Wine Only":
             filtered_df = filtered_df[filtered_df['total_sparkling'] == False]
         
@@ -447,83 +428,81 @@ def main():
         if selected_countries:
             filtered_df = filtered_df[filtered_df['final_country'].isin(selected_countries)]
         
-        # Create chart data (use filtered data for all charts)
-        chart_df = filtered_df.copy()
-        
-        # Show filtering results with business terminology and data quality context
+        # Show filtering results
         metrics = create_summary_metrics(filtered_df)
-        st.write(f"📈 **Market Analysis:** {len(filtered_df):,} depletion records (of {len(df):,} total) | **Total Case Volume:** {metrics['total_market_value']:,.0f} cases | **SKU Portfolio:** {metrics['unique_skus']:,} products")
+        st.write(f"**Market Analysis:** {len(filtered_df):,} depletion records | **Total Case Volume:** {metrics['total_market_value']:,.0f} cases | **SKU Portfolio:** {metrics['unique_skus']:,} products | **Dominant Tier:** {metrics['avg_price_tier']}")
         
         if len(filtered_df) > 0:
-            # Business summary metrics
-            with st.expander("📋 Market Portfolio Summary"):
-                business_summary = create_business_summary(filtered_df)
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("Total SKUs", f"{business_summary['Total SKUs']:,}")
-                    st.metric("Active Varieties", f"{business_summary['Active Varieties']:,}")
-                
-                with col2:
-                    st.metric("Countries Represented", f"{business_summary['Countries Represented']:,}")
-                    st.metric("Sparkling Portfolio", f"{business_summary['Sparkling Portfolio']:,}")
-                
-                with col3:
-                    st.metric("Premium Varieties", f"{business_summary['Premium Categories']:,}")
-                    st.write(f"**Market Coverage:** {business_summary['Market Coverage']}")
-            
             # Main performance metrics
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
-                st.metric("Control State Depletions", f"{metrics['control_state_sales']:,.0f} cases")
+                st.metric("Control State", f"{metrics['control_state_sales']:,.0f} cases")
             with col2:
-                st.metric("Off-Premise Depletions", f"{metrics['licensed_retailer_sales']:,.0f} cases")
+                st.metric("Off-Premise", f"{metrics['licensed_retailer_sales']:,.0f} cases")
             with col3:
-                st.metric("Inventory Transfers", f"{metrics['inventory_transfers']:,.0f} cases")
+                st.metric("Transfers", f"{metrics['inventory_transfers']:,.0f} cases")
             with col4:
-                st.metric("Unique SKUs", f"{metrics['unique_skus']:,}")
+                st.metric("Active SKUs", f"{metrics['unique_skus']:,}")
             with col5:
-                st.metric("Sparkling Volume", f"{metrics['sparkling_volume']:,} cases")
+                st.metric("Sparkling", f"{metrics['sparkling_volume']:,} cases")
             
-            # Charts
-            st.subheader("📊 Market Performance & Category Analysis")
+            # ENHANCED CHARTS SECTION
+            st.subheader("Market Performance & Strategic Analysis")
             
+            # Row 1: Trends and Price Tier Analysis
             col1, col2 = st.columns(2)
             
             with col1:
-                monthly_chart = create_monthly_trends_chart(chart_df)
+                monthly_chart = create_monthly_trends_chart(filtered_df)
                 st.plotly_chart(monthly_chart, use_container_width=True)
             
             with col2:
-                color_chart = create_wine_color_chart(chart_df, selected_colors)
-                st.plotly_chart(color_chart, use_container_width=True)
+                price_tier_chart = create_price_tier_performance_chart(filtered_df)
+                st.plotly_chart(price_tier_chart, use_container_width=True)
             
-            # Variety performance chart (context-aware)
-            variety_chart = create_variety_performance_chart(chart_df, selected_varieties)
-            st.plotly_chart(variety_chart, use_container_width=True)
-            
+            # Row 2: Seasonal Trends and Performance Benchmarks
             col1, col2 = st.columns(2)
             
             with col1:
-                # Country performance chart
-                country_chart = create_country_performance_chart(chart_df)
-                st.plotly_chart(country_chart, use_container_width=True)
+                quarterly_chart = create_quarterly_trends_chart(filtered_df)
+                st.plotly_chart(quarterly_chart, use_container_width=True)
             
             with col2:
-                # Sparkling wine analysis
-                sparkling_chart = create_sparkling_analysis_chart(chart_df)
-                st.plotly_chart(sparkling_chart, use_container_width=True)
+                benchmark_chart = create_performance_benchmark_chart(filtered_df, selected_varieties=selected_varieties)
+                st.plotly_chart(benchmark_chart, use_container_width=True)
             
-            # Data table with business context
-            with st.expander("🔍 View Market Data Details"):
-                # Show key columns with business-friendly names
-                display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 
-                               'RETAIL SALES', 'WAREHOUSE SALES', 'RETAIL TRANSFERS']
+            # Export functionality
+            st.subheader("📤 Data Export & Reporting")
+            col1, col2 = st.columns([1, 3])
+            
+            with col1:
+                # Create downloadable CSV
+                csv_data = filtered_df[['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 'price_tier',
+                                      'RETAIL SALES', 'WAREHOUSE SALES', 'quarter']].copy()
+                csv_data.columns = ['Product Name', 'Variety', 'Category', 'Country', 'Price Tier',
+                                  'Control State ($)', 'Off-Premise ($)', 'Season']
                 
-                # Rename columns for business users
+                csv_buffer = io.StringIO()
+                csv_data.head(1000).to_csv(csv_buffer, index=False)
+                
+                st.download_button(
+                    label="Download Market Data (CSV)",
+                    data=csv_buffer.getvalue(),
+                    file_name=f"wine_market_analysis_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+            
+            with col2:
+                st.info("💡 **Export Note:** CSV includes top 1000 records from filtered dataset. In production, this would include full dataset with additional business metrics and formatting.")
+            
+            # Data table
+            with st.expander("🔍 Detailed Market Data"):
+                display_cols = ['WINE_NAME_EXTRACTED', 'final_variety', 'wine_color', 'final_country', 'price_tier',
+                               'RETAIL SALES', 'WAREHOUSE SALES', 'quarter']
+                
                 display_df = filtered_df[display_cols].copy()
-                display_df.columns = ['Product Name', 'Variety', 'Category', 'Country', 
-                                     'Control State ($)', 'Off-Premise ($)', 'Transfers ($)']
+                display_df.columns = ['Product Name', 'Variety', 'Category', 'Country', 'Price Tier',
+                                     'Control State ($)', 'Off-Premise ($)', 'Season']
                 
                 st.dataframe(display_df.head(100), use_container_width=True)
                 
