@@ -15,7 +15,7 @@ def clean_supplier_name(name):
     """
     if pd.isna(name):
         return ""
-    
+        
     name = str(name).upper().strip()
     
     # Remove common business suffixes and variations

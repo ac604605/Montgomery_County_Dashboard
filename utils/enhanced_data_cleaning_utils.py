@@ -3,9 +3,9 @@ import numpy as np
 from typing import Optional, Dict, List, Union, Tuple, Any
 import warnings
 
-# ================================
+# ===============================
 # DATA CLEANING UTILITIES WITH PROGRESS TRACKING
-# ================================
+# ===============================
 
 def clean_missing_supplier_data(df: pd.DataFrame, 
                                supplier_col: str = 'SUPPLIER',
