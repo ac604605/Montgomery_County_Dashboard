@@ -112,28 +112,28 @@ class MontgomeryCountyAPI:
     def fetch_all_data(self, max_records: Optional[int] = None) -> Generator[pd.DataFrame, None, None]:
         """
         Fetch all data in chunks, yielding DataFrames
-        
-        Args:
-            max_records: Maximum records to fetch (None for all)
-            
-        Yields:
-            DataFrame chunks
         """
         total_records = self.get_total_records()
         if max_records:
             total_records = min(total_records, max_records)
         
+        print(f"DEBUG: Total records to fetch: {total_records}")
         logger.info(f"Fetching {total_records:,} records from Montgomery County API")
         
-        offset = 1000
+        offset = 0
         chunk_size = min(self.config.chunk_size, total_records)
+        
+        print(f"DEBUG: Chunk size: {chunk_size}")
         
         while offset < total_records:
             current_limit = min(chunk_size, total_records - offset)
             
+            print(f"DEBUG: Fetching offset {offset}, limit {current_limit}")
             logger.info(f"Fetching records {offset:,} to {offset + current_limit:,}")
             
             chunk_data = self.fetch_data_chunk(offset, current_limit)
+            
+            print(f"DEBUG: Received {len(chunk_data)} records")
             
             if not chunk_data:
                 logger.warning(f"No data returned for offset {offset}")
