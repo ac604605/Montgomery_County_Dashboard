@@ -179,37 +179,38 @@ class DataManager:
         """Initialize SQLite database with required tables"""
         conn = sqlite3.connect(self.db_path)
         
-        # Sales data table
+        # Sales data table - updated to match Montgomery County API
         conn.execute('''
             CREATE TABLE IF NOT EXISTS sales_data (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                item_type TEXT,
-                item_description TEXT,
+                calendar_year TEXT,
+                cal_month_num TEXT,
                 supplier TEXT,
                 item_code TEXT,
-                year INTEGER,
-                month INTEGER,
+                item_description TEXT,
+                item_type TEXT,
+                rtl_sales TEXT,
+                rtl_transfers TEXT,
+                whs_sales TEXT,
                 data_hash TEXT UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
-        # Matched results table
+        # Matched results table (this was missing from your code)
         conn.execute('''
-            CREATE TABLE IF NOT EXISTS sales_data (
+            CREATE TABLE IF NOT EXISTS matched_results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                calendar_year INTEGER,
-                cal_month_num INTEGER,
-                supplier TEXT,
-                item_code TEXT,
-                item_description TEXT,
-                item_type TEXT,
-                rtl_sales REAL,
-                rtl_transfers REAL,
-                whs_sales REAL,
-                data_hash TEXT UNIQUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                sales_id INTEGER,
+                wine_name_extracted TEXT,
+                review_match_score REAL,
+                review_title TEXT,
+                review_country TEXT,
+                review_variety TEXT,
+                review_points INTEGER,
+                review_price REAL,
+                match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sales_id) REFERENCES sales_data (id)
             )
         ''')
         
@@ -226,10 +227,10 @@ class DataManager:
                 notes TEXT
             )
         ''')
-        
-        conn.commit()
-        conn.close()
-        logger.info(f"Database initialized at {self.db_path}")
+    
+    conn.commit()
+    conn.close()
+    logger.info(f"Database initialized at {self.db_path}")
     
     def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
         """Store sales data chunk and return list of IDs"""
