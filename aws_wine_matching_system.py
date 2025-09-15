@@ -45,7 +45,7 @@ class APIConfig:
     base_url: str = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
     app_token: str = None  # Add your app token here for higher rate limits
     max_limit: int = 50000  # SODA 2.1 endpoint limit
-    chunk_size: int = 10000  # Optimal chunk size for processing
+    chunk_size: int = 1000  # Optimal chunk size for processing
     rate_limit_delay: float = 0.1  # Delay between API calls
 
 
@@ -120,7 +120,7 @@ class MontgomeryCountyAPI:
         print(f"DEBUG: Total records to fetch: {total_records}")
         logger.info(f"Fetching {total_records:,} records from Montgomery County API")
         
-        offset = 500
+        offset = 0
         chunk_size = min(self.config.chunk_size, total_records)
         
         print(f"DEBUG: Chunk size: {chunk_size}")
