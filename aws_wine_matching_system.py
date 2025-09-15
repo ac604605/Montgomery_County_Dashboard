@@ -228,9 +228,9 @@ class DataManager:
             )
         ''')
     
-    conn.commit()
-    conn.close()
-    logger.info(f"Database initialized at {self.db_path}")
+        conn.commit()
+        conn.close()
+        logger.info(f"Database initialized at {self.db_path}")
     
     def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
         """Store sales data chunk and return list of IDs"""
