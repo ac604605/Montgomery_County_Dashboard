@@ -1,1 +1,6 @@
 ".ipynb_checkpoints/"  "utils/__pycache__/"  "*.pkl" 
+wine_env/
+wine_env/
+__pycache__/
+*.pyc
+logs/
