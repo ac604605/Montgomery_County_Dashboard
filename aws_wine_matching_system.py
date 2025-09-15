@@ -70,25 +70,31 @@ class MontgomeryCountyAPI:
             self.session.headers.update({'X-App-Token': config.app_token})
     
     def get_total_records(self) -> int:
-        """Get total number of records available"""
+    """Find actual total records using binary search"""
         try:
-            url = f"{self.config.base_url}?$limit=1"
-            print(f"DEBUG: Making request to: {url}")
-            
-            # Use requests directly without custom headers
-            import requests
-            response = requests.get(url, timeout=30)
-            
-            print(f"DEBUG: Response status: {response.status_code}")
+            # Test connectivity
+            response = self.session.get(f"{self.config.base_url}?$limit=1")
             response.raise_for_status()
             
-            logger.info("API accessible, using estimated record count")
-            return 10000
+            # Binary search for endpoint
+            low, high = 0, 1000000
+            while low < high - 1000:  # Stop when close enough
+                mid = (low + high) // 2
+                test_response = self.session.get(f"{self.config.base_url}?$limit=1&$offset={mid}")
+                
+                if test_response.json():  # Has data
+                    low = mid
+                else:  # Empty response
+                    high = mid
+                
+                time.sleep(0.1)  # Rate limiting
+            
+            logger.info(f"Estimated total records: {low}")
+            return low
             
         except Exception as e:
-            print(f"DEBUG: Exception details: {e}")
-            logger.error(f"Failed to access API: {e}")
-            return 0
+            logger.error(f"Failed to determine total records: {e}")
+            return 50000  # Fallback
     
     def fetch_data_chunk(self, offset: int, limit: int) -> List[Dict]:
         """Fetch a chunk of data with offset and limit"""
