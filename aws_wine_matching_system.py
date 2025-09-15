@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class APIConfig:
     """Configuration for Montgomery County API"""
-    base_url: str = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
+    base_url: str = "https://data.montgomerycountymd.gov/api/v3/views/jiax-q27w/query.json"
     app_token: str = None  # Add your app token here for higher rate limits
     max_limit: int = 50000  # SODA 2.1 endpoint limit
     chunk_size: int = 10000  # Optimal chunk size for processing
@@ -543,7 +543,7 @@ class WineMatchingPipeline:
         # You could implement caching, database storage, or API fetching here
         try:
             # Example implementation - adjust path as needed
-            return pd.read_csv('wine_reviews.csv')
+            return pd.read_csv('data/winemag-data-130k-v2.csv')
         except FileNotFoundError:
             logger.error("Wine review data not found - download from Kaggle first")
             return None
