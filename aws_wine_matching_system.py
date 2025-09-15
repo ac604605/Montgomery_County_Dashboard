@@ -72,15 +72,16 @@ class MontgomeryCountyAPI:
     def get_total_records(self) -> int:
         """Get total number of records available"""
         try:
-            # Use $select=count(*) to get total count efficiently
-            url = f"{self.config.base_url}?$select=count(*)"
+            # Test basic connectivity first
+            url = f"{self.config.base_url}?$limit=1"
             response = self.session.get(url)
             response.raise_for_status()
             
-            data = response.json()
-            return int(data[0]['count'])
+            logger.info("API accessible, will determine total during processing")
+            return 50000  # Start with a reasonable upper bound
+            
         except Exception as e:
-            logger.error(f"Failed to get total record count: {e}")
+            logger.error(f"Failed to access API: {e}")
             return 0
     
     def fetch_data_chunk(self, offset: int, limit: int) -> List[Dict]:
