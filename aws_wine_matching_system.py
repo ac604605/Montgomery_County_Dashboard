@@ -599,7 +599,7 @@ def main():
         chunk_size=config_data['api']['chunk_size'],
         rate_limit_delay=config_data['api']['rate_limit_delay']
     )
-)
+
     
     processing_config = ProcessingConfig(
         matching_threshold=0.6,
