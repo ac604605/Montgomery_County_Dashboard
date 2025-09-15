@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class APIConfig:
     """Configuration for Montgomery County API"""
-    base_url: str = "https://data.montgomerycountymd.gov/api/v3/views/jiax-q27w/query.json"
+    base_url: str = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
     app_token: str = None  # Add your app token here for higher rate limits
     max_limit: int = 50000  # SODA 2.1 endpoint limit
     chunk_size: int = 10000  # Optimal chunk size for processing
