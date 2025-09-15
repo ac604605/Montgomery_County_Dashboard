@@ -72,15 +72,21 @@ class MontgomeryCountyAPI:
     def get_total_records(self) -> int:
         """Get total number of records available"""
         try:
-            # Test basic connectivity first
             url = f"{self.config.base_url}?$limit=1"
-            response = self.session.get(url)
+            print(f"DEBUG: Making request to: {url}")
+            
+            # Use requests directly without custom headers
+            import requests
+            response = requests.get(url, timeout=30)
+            
+            print(f"DEBUG: Response status: {response.status_code}")
             response.raise_for_status()
             
-            logger.info("API accessible, will determine total during processing")
-            return 50000  # Start with a reasonable upper bound
+            logger.info("API accessible, using estimated record count")
+            return 10000
             
         except Exception as e:
+            print(f"DEBUG: Exception details: {e}")
             logger.error(f"Failed to access API: {e}")
             return 0
     
