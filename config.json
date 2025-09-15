@@ -1,0 +1,40 @@
+{
+  "api": {
+    "base_url": "https://data.montgomerycountymd.gov/resource/v76h-r7br.json",
+    "app_token": "",
+    "max_limit": 50000,
+    "chunk_size": 1000,
+    "rate_limit_delay": 0.5
+  },
+  "processing": {
+    "matching_threshold": 0.6,
+    "enable_parallel": false,
+    "max_workers": 1,
+    "cache_enabled": true,
+    "database_path": "/home/ec2-user/Montgomery_County_Dashboard/wine_data.db",
+    "backup_enabled": false,
+    "memory_limit_mb": 800
+  },
+  "scheduling": {
+    "full_update_cron": "0 3 * * 0",
+    "incremental_update_cron": "0 7 * * 1,3,5",
+    "cleanup_cron": "0 2 * * 0"
+  },
+  "logging": {
+    "level": "INFO",
+    "file_path": "/home/ec2-user/Montgomery_County_Dashboard/logs/wine_matcher.log",
+    "max_size_mb": 10,
+    "backup_count": 5
+  },
+  "dashboard": {
+    "port": 8501,
+    "host": "0.0.0.0",
+    "auto_start": true
+  },
+  "portfolio_mode": {
+    "enabled": true,
+    "max_records_per_run": 10000,
+    "sample_data_only": false,
+    "reduced_logging": true
+  }
+}
