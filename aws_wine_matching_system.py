@@ -70,7 +70,6 @@ class MontgomeryCountyAPI:
             self.session.headers.update({'X-App-Token': config.app_token})
     
     def get_total_records(self) -> int:
-    """Find actual total records using binary search"""
         try:
             # Test connectivity
             response = self.session.get(f"{self.config.base_url}?$limit=1")
