@@ -197,20 +197,21 @@ class DataManager:
         
         # Matched results table
         conn.execute('''
-            CREATE TABLE IF NOT EXISTS matched_results (
+            CREATE TABLE IF NOT EXISTS sales_data (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sales_id INTEGER,
-                wine_name_extracted TEXT,
-                review_match_score REAL,
-                review_title TEXT,
-                review_country TEXT,
-                review_variety TEXT,
-                review_points INTEGER,
-                review_price REAL,
-                match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (sales_id) REFERENCES sales_data (id)
+                calendar_year INTEGER,
+                cal_month_num INTEGER,
+                supplier TEXT,
+                item_code TEXT,
+                item_description TEXT,
+                item_type TEXT,
+                rtl_sales REAL,
+                rtl_transfers REAL,
+                whs_sales REAL,
+                data_hash TEXT UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
+        '''))
         
         # Processing metadata
         conn.execute('''
