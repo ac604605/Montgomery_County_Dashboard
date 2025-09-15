@@ -234,25 +234,16 @@ class DataManager:
         """Store sales data chunk and return list of IDs"""
         conn = sqlite3.connect(self.db_path)
         
-        # Add data hash for deduplication
-        df['data_hash'] = df.apply(
-            lambda row: hashlib.md5(
-                str(row.to_dict()).encode()
-            ).hexdigest(), axis=1
-        )
-        
         try:
-            # Insert with IGNORE to handle duplicates
-            df.to_sql('sales_data', conn, if_exists='append', index=False, method='replace')
+            # Get starting row ID before insert
+            cursor = conn.execute("SELECT COUNT(*) FROM sales_data")
+            start_id = cursor.fetchone()[0] + 1
             
-            # Get the IDs of inserted records
-            cursor = conn.execute(
-                "SELECT id FROM sales_data WHERE data_hash IN ({})".format(
-                    ','.join(['?' for _ in df['data_hash']])
-                ), df['data_hash'].tolist()
-            )
+            # Insert data
+            df.to_sql('sales_data', conn, if_exists='append', index=False)
             
-            ids = [row[0] for row in cursor.fetchall()]
+            # Return range of IDs for inserted rows
+            ids = list(range(start_id, start_id + len(df)))
             conn.commit()
             return ids
             
