@@ -588,11 +588,18 @@ def main():
     """Main execution function"""
     
     # Configuration
+    import json
+
+    # Load from config file
+    with open('config.json', 'r') as f:
+        config_data = json.load(f)
+
     api_config = APIConfig(
-        app_token="YOUR_APP_TOKEN_HERE",  # Get from https://dev.socrata.com/
-        chunk_size=5000,  # Smaller chunks for memory efficiency
-        rate_limit_delay=0.1
+        base_url=config_data['api']['base_url'],
+        chunk_size=config_data['api']['chunk_size'],
+        rate_limit_delay=config_data['api']['rate_limit_delay']
     )
+)
     
     processing_config = ProcessingConfig(
         matching_threshold=0.6,
