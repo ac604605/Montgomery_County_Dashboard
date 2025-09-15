@@ -538,21 +538,21 @@ class WineMatchingPipeline:
         logger.info(f"Incremental update complete: {len(matches)} new matches")
     
     def _load_review_data(self) -> Optional[pd.DataFrame]:
-    """Load wine review data from Kaggle dataset or cached file"""
-    try:
-        print("DEBUG: Attempting to load wine review data...")
-        df = pd.read_csv('data/winemag-data-130k-v2.csv')
-        print(f"DEBUG: Successfully loaded {len(df)} rows of wine review data")
-        print(f"DEBUG: Columns: {list(df.columns)}")
-        return df
-    except FileNotFoundError:
-        print("DEBUG: FileNotFoundError occurred")
-        logger.error("Wine review data not found - download from Kaggle first")
-        return None
-    except Exception as e:
-        print(f"DEBUG: Unexpected error loading wine data: {e}")
-        logger.error(f"Error loading wine review data: {e}")
-        return None
+        """Load wine review data from Kaggle dataset or cached file"""
+        try:
+            print("DEBUG: Attempting to load wine review data...")
+            df = pd.read_csv('data/winemag-data-130k-v2.csv')
+            print(f"DEBUG: Successfully loaded {len(df)} rows of wine review data")
+            print(f"DEBUG: Columns: {list(df.columns)}")
+            return df
+        except FileNotFoundError:
+            print("DEBUG: FileNotFoundError occurred")
+            logger.error("Wine review data not found - download from Kaggle first")
+            return None
+        except Exception as e:
+            print(f"DEBUG: Unexpected error loading wine data: {e}")
+            logger.error(f"Error loading wine review data: {e}")
+            return None
     
     def _log_processing_metadata(self, process_type: str, start_time: datetime,
                                end_time: datetime, records_processed: int,
