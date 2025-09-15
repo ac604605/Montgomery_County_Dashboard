@@ -3,4 +3,8 @@ wine_env/
 wine_env/
 __pycache__/
 *.pyc
+<<<<<<< HEAD
 logs/
+=======
+logs/
+>>>>>>> a1a7e9cb536b34ea3f5ab674e9d09eadb20b5667
