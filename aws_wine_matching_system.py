@@ -120,7 +120,7 @@ class MontgomeryCountyAPI:
         print(f"DEBUG: Total records to fetch: {total_records}")
         logger.info(f"Fetching {total_records:,} records from Montgomery County API")
         
-        offset = 0
+        offset = 500
         chunk_size = min(self.config.chunk_size, total_records)
         
         print(f"DEBUG: Chunk size: {chunk_size}")
