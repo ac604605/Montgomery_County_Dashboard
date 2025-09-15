@@ -95,14 +95,14 @@ class MontgomeryCountyAPI:
         try:
             params = {
                 '$limit': limit,
-                '$offset': offset,
-                '$order': 'date DESC'  # Get most recent data first
+                '$offset': offset
+                # Remove this line: '$order': 'date DESC'
             }
             
             response = self.session.get(self.config.base_url, params=params)
             response.raise_for_status()
             
-            time.sleep(self.config.rate_limit_delay)  # Rate limiting
+            time.sleep(self.config.rate_limit_delay)
             return response.json()
             
         except Exception as e:
