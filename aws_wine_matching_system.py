@@ -125,7 +125,7 @@ class MontgomeryCountyAPI:
         
         logger.info(f"Fetching {total_records:,} records from Montgomery County API")
         
-        offset = 0
+        offset = 1000
         chunk_size = min(self.config.chunk_size, total_records)
         
         while offset < total_records:
