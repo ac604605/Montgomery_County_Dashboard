@@ -211,7 +211,7 @@ class DataManager:
                 data_hash TEXT UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        '''))
+        ''')
         
         # Processing metadata
         conn.execute('''
