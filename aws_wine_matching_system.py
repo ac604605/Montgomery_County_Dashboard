@@ -587,6 +587,11 @@ class WineMatchingPipeline:
             """, ('sales_data', new_offset))
             conn.commit()
 
+        # Always define matches for logging, even if empty
+        matches_count = len(matches) if matches else 0
+        logger.info(f"Incremental update complete: {matches_count} new matches processed, checkpoint updated to ID {new_offset}")
+
+
     logger.info(f"Incremental update complete: {len(matches)} new matches processed, checkpoint updated to ID {new_offset}")
 
     
