@@ -1,13 +1,13 @@
-// MetricsCard.jsx
 import React from 'react';
-import './MetricsCard.css'; // Import CSS here
 
-// Component function
-export default function MetricsCard({ title, value }) {
+function MetricsCard({ label, value, color = "#722F37" }) {
   return (
-    <div className="card">
-      <h2>{title}</h2>
+    <div className="metrics-card" style={{ borderLeft: `4px solid ${color}`, padding: '10px' }}>
+      <h3>{label}</h3>
       <p>{value}</p>
     </div>
   );
 }
+
+// This line is critical:
+export default MetricsCard;
