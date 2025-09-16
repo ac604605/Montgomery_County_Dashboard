@@ -537,27 +537,18 @@ class WineMatchingPipeline:
             
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
-            # Save cache even on failure to preserve work done
-            try:
-                self.matcher.save_cache()
-                logger.info("Cache saved despite pipeline failure")
-            except:
-                logger.error("Failed to save cache on error")
-            raise
-        finally:
-            # Always try to save cache
-            try:
-                self.matcher.save_cache()
-            except:
-                pass
-            
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
             self._log_processing_metadata(
                 'full_update', start_time, datetime.now(),
                 total_processed, total_matches, False, str(e)
             )
             raise
+        finally:
+            # Always try to save cache
+            try:
+                self.matcher.save_cache()
+                logger.info("Cache saved")
+            except Exception as cache_error:
+                logger.error(f"Failed to save cache: {cache_error}")
     
     def run_incremental_update(self, days: int = 7):
         """Run incremental update for recent data"""
