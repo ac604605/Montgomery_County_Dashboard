@@ -173,151 +173,152 @@ class MontgomeryCountyAPI:
         
         return df
 
+import sqlite3
+import pandas as pd
+from typing import List, Dict
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class DataManager:
     """Handle database operations and data persistence"""
-    
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.init_database()
-    
+
     def init_database(self):
         """Initialize SQLite database with required tables"""
-        conn = sqlite3.connect(self.db_path)
-        
-         # Sales data table - updated to match Montgomery County API
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS sales_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                calendar_year TEXT,
-                cal_month_num TEXT,
-                supplier TEXT,
-                item_code TEXT,
-                item_description TEXT,
-                item_type TEXT,
-                rtl_sales TEXT,
-                rtl_transfers TEXT,
-                whs_sales TEXT,
-                data_hash TEXT UNIQUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Matched results table (this was missing from your code)
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS matched_results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sales_id INTEGER,
-                wine_name_extracted TEXT,
-                review_match_score REAL,
-                review_title TEXT,
-                review_country TEXT,
-                review_variety TEXT,
-                review_points INTEGER,
-                review_price REAL,
-                match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (sales_id) REFERENCES sales_data (id)
-            )
-        ''')
-        
-        # Processing metadata
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS processing_metadata (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                process_type TEXT,
-                start_time TIMESTAMP,
-                end_time TIMESTAMP,
-                records_processed INTEGER,
-                matches_found INTEGER,
-                success BOOLEAN,
-                notes TEXT
-            )
-        ''')
-        
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS processing_watermarks (
-                data_source TEXT PRIMARY KEY,
-                last_processed_offset INTEGER,
-                last_update_time TIMESTAMP
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            # Sales data table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS sales_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    calendar_year TEXT,
+                    cal_month_num TEXT,
+                    supplier TEXT,
+                    item_code TEXT,
+                    item_description TEXT,
+                    item_type TEXT,
+                    rtl_sales TEXT,
+                    rtl_transfers TEXT,
+                    whs_sales TEXT,
+                    data_hash TEXT UNIQUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            # Matched results table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS matched_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sales_id INTEGER,
+                    wine_name_extracted TEXT,
+                    review_match_score REAL,
+                    review_title TEXT,
+                    review_country TEXT,
+                    review_variety TEXT,
+                    review_points INTEGER,
+                    review_price REAL,
+                    match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (sales_id) REFERENCES sales_data (id)
+                )
+            ''')
+
+            # Processing metadata
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS processing_metadata (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    process_type TEXT,
+                    start_time TIMESTAMP,
+                    end_time TIMESTAMP,
+                    records_processed INTEGER,
+                    matches_found INTEGER,
+                    success BOOLEAN,
+                    notes TEXT
+                )
+            ''')
+
+            # Processing watermarks
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS processing_watermarks (
+                    data_source TEXT PRIMARY KEY,
+                    last_processed_offset INTEGER,
+                    last_update_time TIMESTAMP
+                )
+            ''')
+
+            conn.commit()
         logger.info(f"Database initialized at {self.db_path}")
-        
+
     def get_last_watermark(self):
         """Get the last processed offset for incremental updates"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.execute(
-            "SELECT last_processed_offset FROM processing_watermarks WHERE data_source = 'montgomery_county'"
-        )
-        result = cursor.fetchone()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT last_processed_offset FROM processing_watermarks WHERE data_source = 'montgomery_county'"
+            )
+            result = cursor.fetchone()
         return result[0] if result else 0
 
     def update_watermark(self, offset):
         """Update the processing watermark"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.execute(
-                "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
-                ('montgomery_county', offset, datetime.now())
-            )
-            conn.commit()
-            conn.close()
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
+                    ('montgomery_county', offset, datetime.now())
+                )
+                conn.commit()
         except Exception as e:
             logger.error(f"Failed to update watermark: {e}")
-            # Don't raise the exception - watermark updates shouldn't stop processing
-        
-       
-    
+            # Don’t raise the exception – watermark updates shouldn’t stop processing
+
     def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
         """Store sales data chunk and return list of IDs"""
-        conn = sqlite3.connect(self.db_path)
-        
         try:
-            # Get starting row ID before insert
-            cursor = conn.execute("SELECT COUNT(*) FROM sales_data")
-            start_id = cursor.fetchone()[0] + 1
-            
-            # Insert data
-            df.to_sql('sales_data', conn, if_exists='append', index=False)
-            
-            # Return range of IDs for inserted rows
-            ids = list(range(start_id, start_id + len(df)))
-            conn.commit()
-            return ids
-            
+            with sqlite3.connect(self.db_path) as conn:
+                # Get starting row ID before insert
+                cursor = conn.execute("SELECT COUNT(*) FROM sales_data")
+                start_id = cursor.fetchone()[0] + 1
+
+                # Insert data
+                df.to_sql('sales_data', conn, if_exists='append', index=False)
+
+                # Return range of IDs for inserted rows
+                ids = list(range(start_id, start_id + len(df)))
+                conn.commit()
+                return ids
+
         except Exception as e:
             logger.error(f"Error storing sales chunk: {e}")
             return []
-        finally:
-            conn.close()
-    
+
     def get_recent_sales_data(self, days: int = 30) -> pd.DataFrame:
         """Get recent sales data for incremental updates"""
-        conn = sqlite3.connect(self.db_path)
-        
-        query = """
+        query = f"""
             SELECT * FROM sales_data 
-            WHERE created_at >= datetime('now', '-{} days')
+            WHERE created_at >= datetime('now', '-{days} days')
             AND item_type = 'WINE'
             ORDER BY created_at DESC
-        """.format(days)
-        
-        df = pd.read_sql_query(query, conn)
-        conn.close()
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            df = pd.read_sql_query(query, conn)
         return df
-    
+
     def store_matches(self, matches: List[Dict]):
         """Store matching results"""
-        conn = sqlite3.connect(self.db_path)
-        
-        df_matches = pd.DataFrame(matches)
-        df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
-        
-        conn.commit()
-        conn.close()
+        if not matches:
+            return
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                df_matches = pd.DataFrame(matches)
+                df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Error storing matches: {e}")
+
 
 
 class OptimizedWineMatcher:
