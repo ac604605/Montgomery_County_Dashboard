@@ -158,13 +158,6 @@ class MontgomeryCountyAPI:
         # Standardize column names to uppercase
         df.columns = df.columns.str.upper()
         
-        # Convert date columns if needed
-        if 'CALENDAR_YEAR' in df.columns and 'CAL_MONTH_NUM' in df.columns:
-            try:
-                df['DATE'] = pd.to_datetime(df['CALENDAR_YEAR'].astype(str) + '-' + df['CAL_MONTH_NUM'].astype(str) + '-01', errors='coerce')
-            except:
-                pass
-        
         # Clean text columns
         text_columns = ['ITEM_TYPE', 'ITEM_DESCRIPTION', 'SUPPLIER']
         for col in text_columns:
