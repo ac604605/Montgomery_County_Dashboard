@@ -127,6 +127,7 @@ class MontgomeryCountyAPI:
             return await resp.json()
 
     async def _fetch_all_chunks(self, start, end, limit=1000, concurrency=5):
+        """Async generator yielding chunks from API"""
         async with aiohttp.ClientSession() as session:
             for i in range(start, end, limit * concurrency):
                 tasks = [
@@ -134,7 +135,7 @@ class MontgomeryCountyAPI:
                     for offset in range(i, min(i + limit * concurrency, end), limit)
                 ]
                 for batch in await asyncio.gather(*tasks):
-                    yield batch
+                    yield batch  # yields raw JSON list per chunk
 
     async def _fetch_chunk(self, session, offset, limit):
         url = f"{self.config.base_url}?$limit={limit}&$offset={offset}"
@@ -156,6 +157,23 @@ class MontgomeryCountyAPI:
         # synchronous wrapper for compatibility
         return asyncio.run(self._fetch_all_chunks(0, max_records))
 
+    def fetch_all_data_streaming(self, max_records):
+    """Synchronous generator that yields DataFrames chunk-by-chunk"""
+    async def wrapper():
+        async for chunk in self._fetch_all_chunks(0, max_records):
+            yield pd.DataFrame(chunk)
+    
+    # Use asyncio to run the async generator and yield each DataFrame
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    agen = wrapper()
+
+    try:
+        while True:
+            chunk_df = loop.run_until_complete(agen.__anext__())
+            yield chunk_df
+    except StopAsyncIteration:
+        loop.close()
 
     
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -502,7 +520,7 @@ class WineMatchingPipeline:
         try:
             # Process data in chunks
             chunk_count = 0
-            for chunk_df in self.api.fetch_all_data(max_records):
+            for chunk_df in self.api.fetch_all_data_streaming(max_records):
                 logger.info(f"Processing chunk with {len(chunk_df)} records")
                 
                 # Store sales data
