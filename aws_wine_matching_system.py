@@ -251,6 +251,8 @@ class DataManager:
                 success BOOLEAN,
                 notes TEXT
             )
+        ''')
+        
         conn.execute('''
             CREATE TABLE IF NOT EXISTS processing_watermarks (
                 data_source TEXT PRIMARY KEY,
