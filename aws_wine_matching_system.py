@@ -504,6 +504,7 @@ class WineMatchingPipeline:
         
         try:
             # Process data in chunks
+            chunk_count = 0
             for chunk_df in self.api.fetch_all_data(max_records):
                 logger.info(f"Processing chunk with {len(chunk_df)} records")
                 
@@ -522,23 +523,33 @@ class WineMatchingPipeline:
                     total_matches += len(matches)
                 
                 total_processed += len(chunk_df)
+                chunk_count += 1
+                
+                # Save cache every 10 chunks (every 10,000 records)
+                if chunk_count % 5 == 0:
+                    self.matcher.save_cache()
+                    logger.info(f"Intermediate cache saved after {total_processed:,} records")
+                
                 logger.info(f"Chunk complete: {len(matches)} matches found")
             
-            # Save cache
+            # Save cache at completion
             self.matcher.save_cache()
             
-            end_time = datetime.now()
-            duration = end_time - start_time
-            
-            # Log completion
-            self._log_processing_metadata(
-                'full_update', start_time, end_time,
-                total_processed, total_matches, True,
-                f"Processed {total_processed:,} records, found {total_matches:,} matches"
-            )
-            
-            logger.info(f"Pipeline complete: {total_processed:,} records processed, "
-                       f"{total_matches:,} matches found in {duration}")
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            # Save cache even on failure to preserve work done
+            try:
+                self.matcher.save_cache()
+                logger.info("Cache saved despite pipeline failure")
+            except:
+                logger.error("Failed to save cache on error")
+            raise
+        finally:
+            # Always try to save cache
+            try:
+                self.matcher.save_cache()
+            except:
+                pass
             
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
