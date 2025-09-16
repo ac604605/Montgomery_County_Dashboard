@@ -155,14 +155,15 @@ class MontgomeryCountyAPI:
     
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
         """Basic cleaning for API data chunk"""
-        # Standardize column names
-        df.columns = df.columns.str.upper().str.replace(' ', '_')
+        # Standardize column names to uppercase
+        df.columns = df.columns.str.upper()
         
-        # Convert date columns
-        date_columns = ['DATE']
-        for col in date_columns:
-            if col in df.columns:
-                df[col] = pd.to_datetime(df[col], errors='coerce')
+        # Convert date columns if needed
+        if 'CALENDAR_YEAR' in df.columns and 'CAL_MONTH_NUM' in df.columns:
+            try:
+                df['DATE'] = pd.to_datetime(df['CALENDAR_YEAR'].astype(str) + '-' + df['CAL_MONTH_NUM'].astype(str) + '-01', errors='coerce')
+            except:
+                pass
         
         # Clean text columns
         text_columns = ['ITEM_TYPE', 'ITEM_DESCRIPTION', 'SUPPLIER']
@@ -332,7 +333,7 @@ class OptimizedWineMatcher:
                            review_data: pd.DataFrame) -> List[Dict]:
         """Match a chunk of sales data against reviews using parallel processing"""
         
-        wine_sales = sales_chunk[sales_chunk['item_type'] == 'WINE'].copy()
+        wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy()
         
         if len(wine_sales) == 0:
             return []
