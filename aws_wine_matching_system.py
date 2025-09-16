@@ -27,6 +27,11 @@ import json
 import re
 from difflib import SequenceMatcher
 from datetime import datetime
+import aiohttp
+import asyncio
+from functools import lru_cache
+
+
 
 # Configure logging
 logging.basicConfig(
@@ -115,50 +120,43 @@ class MontgomeryCountyAPI:
             logger.error(f"Failed to fetch chunk at offset {offset}: {e}")
             return []
     
-    def fetch_all_data(self, max_records: Optional[int] = None) -> Generator[pd.DataFrame, None, None]:
-        """
-        Fetch all data in chunks, yielding DataFrames
-        """
-        total_records = self.get_total_records()
-        if max_records:
-            total_records = min(total_records, max_records)
-            
-        #Get starting offset from watermark
-        start_offset = self.data_manager.get_last_watermark()
-        logger.info(f"Resuming from offest: {start_offset}")
-        
-        print(f"DEBUG: Total records to fetch: {total_records}")
-        logger.info(f"Fetching {total_records:,} records from Montgomery County API")
-        
-        offset = start_offset
-        chunk_size = min(self.config.chunk_size, total_records)
-        
-        print(f"DEBUG: Chunk size: {chunk_size}")
-        
-        while offset < total_records:
-            current_limit = min(chunk_size, total_records - offset)
-            
-            print(f"DEBUG: Fetching offset {offset}, limit {current_limit}")
-            logger.info(f"Fetching records {offset:,} to {offset + current_limit:,}")
-            
-            chunk_data = self.fetch_data_chunk(offset, current_limit)
-            
-            print(f"DEBUG: Received {len(chunk_data)} records")
-            
-            if not chunk_data:
-                logger.warning(f"No data returned for offset {offset}")
-                break
-            
-            df_chunk = pd.DataFrame(chunk_data)
-            
-            # Basic data cleaning
-            df_chunk = self.clean_chunk(df_chunk)
-            
-            yield df_chunk
-            
-            self.data_manager.update_watermark(offset + current_limit)
-            
-            offset += current_limit
+    async def _fetch_chunk(self, session, offset, limit):
+        url = f"{self.api_base}?$limit={limit}&$offset={offset}"
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
+    async def _fetch_all_chunks(self, start, end, limit=1000, concurrency=5):
+        async with aiohttp.ClientSession() as session:
+            for i in range(start, end, limit * concurrency):
+                tasks = [
+                    self._fetch_chunk(session, offset, limit)
+                    for offset in range(i, min(i + limit * concurrency, end), limit)
+                ]
+                for batch in await asyncio.gather(*tasks):
+                    yield batch
+
+    async def _fetch_chunk(self, session, offset, limit):
+        url = f"{self.config.base_url}?$limit={limit}&$offset={offset}"
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
+    async def _fetch_all_chunks(self, start, end, limit=1000, concurrency=5):
+        async with aiohttp.ClientSession() as session:
+            for i in range(start, end, limit * concurrency):
+                tasks = [
+                    self._fetch_chunk(session, offset, limit)
+                    for offset in range(i, min(i + limit * concurrency, end), limit)
+                ]
+                for batch in await asyncio.gather(*tasks):
+                    yield batch
+
+    def fetch_all_data(self, max_records):
+        # synchronous wrapper for compatibility
+        return asyncio.run(self._fetch_all_chunks(0, max_records))
+
+
     
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
         """Basic cleaning for API data chunk"""
@@ -188,6 +186,14 @@ class DataManager:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.init_database()
+
+    def insert_records(self, conn, rows):
+        cursor = conn.cursor()
+        cursor.executemany(
+            "INSERT INTO matched_results (sales_id, wine_name_extracted, review_match_score, review_title, review_country, review_variety, review_points, review_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(r['sales_id'], r['wine_name_extracted'], r['review_match_score'], r['review_title'], r['review_country'], r['review_variety'], r['review_points'], r['review_price']) for r in rows]
+        )
+        conn.commit()
 
     def init_database(self):
         """Initialize SQLite database with required tables"""
@@ -256,19 +262,11 @@ class DataManager:
     def get_last_watermark(self):
         """Get the last processed offset for incremental updates"""
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT last_processed_offset FROM processing_watermarks WHERE data_source = 'montgomery_county'"
-            )
-            result = cursor.fetchone()
-        return result[0] if result else 0
-
-    def update_watermark(self, offset):
-        """Update the processing watermark"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute(
-                    "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
-                    ('montgomery_county', offset, datetime.now())
+            def insert_records(self, conn, rows):
+                cursor = conn.cursor()
+                cursor.executemany(
+                    "INSERT INTO wine_matches (wine_id, match_id, score) VALUES (?, ?, ?)",
+                    rows
                 )
                 conn.commit()
         except Exception as e:
@@ -313,8 +311,7 @@ class DataManager:
             return
         try:
             with sqlite3.connect(self.db_path) as conn:
-                df_matches = pd.DataFrame(matches)
-                df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
+                self.insert_records(conn, matches)
                 conn.commit()
         except Exception as e:
             logger.error(f"Error storing matches: {e}")
@@ -409,7 +406,7 @@ class OptimizedWineMatcher:
             else:
                 # Find match
                 wine_name = self.clean_text_for_matching(item_desc)
-                match_result = self._find_wine_match(wine_name, review_data)
+                match_result = self._find_wine_match(wine_name)
                 
                 # Cache result
                 if self.config.cache_enabled:
@@ -430,7 +427,8 @@ class OptimizedWineMatcher:
         
         return matches
     
-    def _find_wine_match(self, wine_name: str, review_data: pd.DataFrame) -> Dict:
+    @lru_cache(maxsize=50000)
+    def _find_wine_match(self, wine_name: str) -> Dict:
         """Find best matching wine review"""
         if len(wine_name) < 3:
             return {'wine_name': wine_name, 'match_score': 0}
@@ -532,7 +530,7 @@ class WineMatchingPipeline:
                 total_processed += len(chunk_df)
                 chunk_count += 1
                 
-                # Save cache every 10 chunks (every 10,000 records)
+                # Save cache every 5 chunks (every 5,000 records)
                 if chunk_count % 5 == 0:
                     self.matcher.save_cache()
                     logger.info(f"Intermediate cache saved after {total_processed:,} records")
