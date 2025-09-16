@@ -121,11 +121,15 @@ class MontgomeryCountyAPI:
         total_records = self.get_total_records()
         if max_records:
             total_records = min(total_records, max_records)
+            
+        #Get starting offset from watermark
+        start_offset = self.data.get_last_watermark()
+        logger.info(f"Resuming from offest: {start_offset}")
         
         print(f"DEBUG: Total records to fetch: {total_records}")
         logger.info(f"Fetching {total_records:,} records from Montgomery County API")
         
-        offset = 0
+        offset = start_offset
         chunk_size = min(self.config.chunk_size, total_records)
         
         print(f"DEBUG: Chunk size: {chunk_size}")
@@ -150,6 +154,8 @@ class MontgomeryCountyAPI:
             df_chunk = self.clean_chunk(df_chunk)
             
             yield df_chunk
+            
+            self.data_manager.update_watermark(offset + current_limit)
             
             offset += current_limit
     
@@ -177,6 +183,26 @@ class DataManager:
     def init_database(self):
         """Initialize SQLite database with required tables"""
         conn = sqlite3.connect(self.db_path)
+        
+    def get_last_watermark(self):
+        """Get the last processed offset for incremental updates"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute(
+            "SELECT last_processed_offset FROM processing_watermarks WHERE data_source = 'montgomery_county'"
+        )
+        result = cursor.fetchone()
+        conn.close()
+        return result[0] if result else 0
+
+    def update_watermark(self, offset):
+        """Update the processing watermark"""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(
+            "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
+            ('montgomery_county', offset, datetime.now())
+        )
+        conn.commit()
+        conn.close()
         
         # Sales data table - updated to match Montgomery County API
         conn.execute('''
@@ -225,8 +251,14 @@ class DataManager:
                 success BOOLEAN,
                 notes TEXT
             )
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS processing_watermarks (
+                data_source TEXT PRIMARY KEY,
+                last_processed_offset INTEGER,
+                last_update_time TIMESTAMP
+            )
         ''')
-    
+        
         conn.commit()
         conn.close()
         logger.info(f"Database initialized at {self.db_path}")
