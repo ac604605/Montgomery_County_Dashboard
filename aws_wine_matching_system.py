@@ -451,6 +451,17 @@ class OptimizedWineMatcher:
 
         return {'wine_name': wine_name, 'match_score': 0}
 
+    def save_cache(self):
+        """Save matching cache to disk"""
+        if self.config.cache_enabled and self.cache:
+            try:
+                with open('match_cache.pkl', 'wb') as f:
+                    pickle.dump(self.cache, f)
+                logger.info(f"Saved {len(self.cache)} cached matches")
+            except Exception as e:
+                logger.error(f"Could not save cache: {e}")
+
+
 class WineMatchingPipeline:
     """Main pipeline orchestrator"""
     
