@@ -481,9 +481,9 @@ class WineMatchingPipeline:
     """Main pipeline orchestrator"""
     
     def __init__(self, api_config: APIConfig, processing_config: ProcessingConfig):
+        self.data_manager = DataManager(processing_config.database_path)
         self.api = MontgomeryCountyAPI(api_config)
         self.api.data_manager = self.data_manager
-        self.data_manager = DataManager(processing_config.database_path)
         self.matcher = OptimizedWineMatcher(processing_config)
         self.processing_config = processing_config
     
