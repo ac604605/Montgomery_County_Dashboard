@@ -538,28 +538,57 @@ class WineMatchingPipeline:
             except Exception as cache_error:
                 logger.error(f"Failed to save cache: {cache_error}")
     
-    def run_incremental_update(self, days: int = 7):
-        """Run incremental update for recent data"""
-        logger.info(f"Running incremental update for last {days} days")
-        
-        # Get recent unmatched data
-        recent_data = self.data_manager.get_recent_sales_data(days)
-        
-        if len(recent_data) == 0:
-            logger.info("No recent data to process")
+    def run_incremental_update(self):
+        """Run incremental update using checkpoint from processing_watermarks"""
+        logger.info("Running incremental update based on last processed checkpoint")
+
+        # Determine last processed ID from watermark table
+        with sqlite3.connect(self.data_manager.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT last_processed_offset FROM processing_watermarks WHERE data_source='sales_data'"
+            )
+            row = cursor.fetchone()
+            last_offset = row[0] if row else 0
+
+            # Get new sales data after last processed ID
+            query = f"""
+                SELECT * FROM sales_data
+                WHERE id > {last_offset} AND item_type = 'WINE'
+                ORDER BY id ASC
+            """
+            recent_data = pd.read_sql_query(query, conn)
+
+        if recent_data.empty:
+            logger.info("No new sales data to process")
             return
-        
+
         # Load review data
         review_data = self._load_review_data()
-        
-        # Match recent wines
+        if review_data is None or len(review_data) == 0:
+            logger.error("No review data available; skipping incremental update")
+            return
+
+        # Match new wine data
         matches = self.matcher.match_chunk_parallel(recent_data, review_data)
-        
+
         # Store matches
         if matches:
             self.data_manager.store_matches(matches)
-        
-        logger.info(f"Incremental update complete: {len(matches)} new matches")
+
+        # Update watermark with the latest processed ID
+        new_offset = recent_data['id'].max()
+        with sqlite3.connect(self.data_manager.db_path) as conn:
+            conn.execute("""
+                INSERT INTO processing_watermarks (data_source, last_processed_offset, last_update_time)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(data_source) DO UPDATE SET
+                    last_processed_offset=excluded.last_processed_offset,
+                    last_update_time=CURRENT_TIMESTAMP
+            """, ('sales_data', new_offset))
+            conn.commit()
+
+    logger.info(f"Incremental update complete: {len(matches)} new matches processed, checkpoint updated to ID {new_offset}")
+
     
     def _load_review_data(self) -> Optional[pd.DataFrame]:
         """Load wine review data from Kaggle dataset or cached file"""
