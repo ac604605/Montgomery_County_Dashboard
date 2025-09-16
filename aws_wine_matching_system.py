@@ -342,6 +342,12 @@ class WineMatchingPipeline:
             chunk_count = 0
             for chunk_df in self.api.fetch_all_data_streaming(max_records):
                 chunk_df = self.api.clean_chunk(chunk_df)
+                
+                # --- FILTER ONLY WINE ---
+                chunk_df = chunk_df[chunk_df['ITEM_TYPE'] == 'WINE'].copy()
+                if chunk_df.empty:
+                    continue
+
                 sales_ids = self.data_manager.store_sales_chunk(chunk_df)
                 chunk_df['id'] = sales_ids
                 matches = self.matcher.match_chunk_parallel(chunk_df, review_data)
