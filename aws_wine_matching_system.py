@@ -332,7 +332,7 @@ class OptimizedWineMatcher:
                            review_data: pd.DataFrame) -> List[Dict]:
         """Match a chunk of sales data against reviews using parallel processing"""
         
-        wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy()
+        wine_sales = sales_chunk[sales_chunk['item_type'] == 'WINE'].copy()
         
         if len(wine_sales) == 0:
             return []
