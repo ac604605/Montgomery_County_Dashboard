@@ -159,6 +159,7 @@ class MontgomeryCountyAPI:
 
     def fetch_all_data_streaming(self, max_records=None):
         """Synchronous generator that yields DataFrames chunk-by-chunk"""
+        
         if max_records is None:
             max_records = 50000  # Or self.config.max_limit if you have it
 
@@ -527,6 +528,9 @@ class WineMatchingPipeline:
             for chunk_df in self.api.fetch_all_data_streaming(max_records):
                 logger.info(f"Processing chunk with {len(chunk_df)} records")
                 
+                # Standardize column names
+                chunk_df = self.api.clean_chunk(pd.DataFrame(chunk_df))
+    
                 # Store sales data
                 sales_ids = self.data_manager.store_sales_chunk(chunk_df)
                 
