@@ -26,6 +26,7 @@ import hashlib
 import json
 import re
 from difflib import SequenceMatcher
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -196,13 +197,17 @@ class DataManager:
 
     def update_watermark(self, offset):
         """Update the processing watermark"""
-        conn = sqlite3.connect(self.db_path)
-        conn.execute(
-            "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
-            ('montgomery_county', offset, datetime.now())
-        )
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute(
+                "INSERT OR REPLACE INTO processing_watermarks VALUES (?, ?, ?)",
+                ('montgomery_county', offset, datetime.now())
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to update watermark: {e}")
+            # Don't raise the exception - watermark updates shouldn't stop processing
         
         # Sales data table - updated to match Montgomery County API
         conn.execute('''
