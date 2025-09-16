@@ -407,8 +407,8 @@ class OptimizedWineMatcher:
         
         return matches
     
-    def _process_wine_chunk(self, wine_chunk: pd.DataFrame, 
-                          review_data: pd.DataFrame) -> List[Dict]:
+    def _process_wine_chunk(self, wine_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
+
         """Process a single chunk of wine data"""
         matches = []
         
