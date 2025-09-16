@@ -17,21 +17,17 @@ import time
 import sqlite3
 import pickle
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple, Generator
+from typing import Dict, List, Optional
 import logging
 from dataclasses import dataclass
 import hashlib
 import json
 import re
 from difflib import SequenceMatcher
-from datetime import datetime
 import aiohttp
 import asyncio
-from functools import lru_cache
-
-
 
 # Configure logging
 logging.basicConfig(
@@ -44,20 +40,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class APIConfig:
-    """Configuration for Montgomery County API"""
     base_url: str = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
-    app_token: str = None  # Add your app token here for higher rate limits
-    max_limit: int = 50000  # SODA 2.1 endpoint limit
-    chunk_size: int = 1000  # Optimal chunk size for processing
-    rate_limit_delay: float = 0.1  # Delay between API calls
-
+    app_token: Optional[str] = None
+    max_limit: int = 50000
+    chunk_size: int = 1000
+    rate_limit_delay: float = 0.1
 
 @dataclass 
 class ProcessingConfig:
-    """Configuration for processing parameters"""
     matching_threshold: float = 0.6
     enable_parallel: bool = True
     max_workers: int = 4
@@ -65,77 +57,24 @@ class ProcessingConfig:
     database_path: str = "wine_data.db"
     backup_enabled: bool = True
 
-
 class MontgomeryCountyAPI:
-    """Handle API calls to Montgomery County alcohol sales data"""
-    
     def __init__(self, config: APIConfig):
         self.config = config
         self.session = requests.Session()
         if config.app_token:
             self.session.headers.update({'X-App-Token': config.app_token})
-    
-    def get_total_records(self) -> int:
-        try:
-            # Test connectivity
-            response = self.session.get(f"{self.config.base_url}?$limit=1")
-            response.raise_for_status()
-            
-            # Binary search for endpoint
-            low, high = 0, 1000000
-            while low < high - 1000:  # Stop when close enough
-                mid = (low + high) // 2
-                test_response = self.session.get(f"{self.config.base_url}?$limit=1&$offset={mid}")
-                
-                if test_response.json():  # Has data
-                    low = mid
-                else:  # Empty response
-                    high = mid
-                
-                time.sleep(0.1)  # Rate limiting
-            
-            logger.info(f"Estimated total records: {low}")
-            return low
-            
-        except Exception as e:
-            logger.error(f"Failed to determine total records: {e}")
-            return 50000  # Fallback
-    
+
     def fetch_data_chunk(self, offset: int, limit: int) -> List[Dict]:
         """Fetch a chunk of data with offset and limit"""
         try:
-            params = {
-                '$limit': limit,
-                '$offset': offset
-                # Remove this line: '$order': 'date DESC'
-            }
-            
+            params = {'$limit': limit, '$offset': offset}
             response = self.session.get(self.config.base_url, params=params)
             response.raise_for_status()
-            
             time.sleep(self.config.rate_limit_delay)
             return response.json()
-            
         except Exception as e:
             logger.error(f"Failed to fetch chunk at offset {offset}: {e}")
             return []
-    
-    async def _fetch_chunk(self, session, offset, limit):
-        url = f"{self.api_base}?$limit={limit}&$offset={offset}"
-        async with session.get(url) as resp:
-            resp.raise_for_status()
-            return await resp.json()
-
-    async def _fetch_all_chunks(self, start, end, limit=1000, concurrency=5):
-        """Async generator yielding chunks from API"""
-        async with aiohttp.ClientSession() as session:
-            for i in range(start, end, limit * concurrency):
-                tasks = [
-                    self._fetch_chunk(session, offset, limit)
-                    for offset in range(i, min(i + limit * concurrency, end), limit)
-                ]
-                for batch in await asyncio.gather(*tasks):
-                    yield batch  # yields raw JSON list per chunk
 
     async def _fetch_chunk(self, session, offset, limit):
         url = f"{self.config.base_url}?$limit={limit}&$offset={offset}"
@@ -153,21 +92,15 @@ class MontgomeryCountyAPI:
                 for batch in await asyncio.gather(*tasks):
                     yield batch
 
-    def fetch_all_data(self, max_records):
-        # synchronous wrapper for compatibility
-        return asyncio.run(self._fetch_all_chunks(0, max_records))
-
     def fetch_all_data_streaming(self, max_records=None):
-        """Synchronous generator that yields DataFrames chunk-by-chunk"""
-        
+        """Synchronous generator yielding DataFrames chunk-by-chunk"""
         if max_records is None:
-            max_records = 50000  # Or self.config.max_limit if you have it
+            max_records = self.config.max_limit
 
         async def wrapper():
-            async for chunk in self._fetch_all_chunks(0, max_records):
+            async for chunk in self._fetch_all_chunks(0, max_records, self.config.chunk_size):
                 yield pd.DataFrame(chunk)
-        
-        # Use asyncio to run the async generator and yield each DataFrame
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         agen = wrapper()
@@ -179,41 +112,21 @@ class MontgomeryCountyAPI:
         except StopAsyncIteration:
             loop.close()
 
-
-    
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Basic cleaning for API data chunk"""
-        # Standardize column names to uppercase
         df.columns = df.columns.str.upper()
-        
-        # Clean text columns
         text_columns = ['ITEM_TYPE', 'ITEM_DESCRIPTION', 'SUPPLIER']
         for col in text_columns:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip().str.upper()
-        
         return df
 
-import sqlite3
-import pandas as pd
-from typing import List, Dict
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
-
-
 class DataManager:
-    """Handle database operations and data persistence"""
-
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.init_database()
 
     def init_database(self):
-        """Initialize SQLite database with required tables"""
         with sqlite3.connect(self.db_path) as conn:
-            # Sales data table
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS sales_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,8 +143,6 @@ class DataManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-
-            # Matched results table
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS matched_results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -247,8 +158,6 @@ class DataManager:
                     FOREIGN KEY (sales_id) REFERENCES sales_data (id)
                 )
             ''')
-
-            # Processing metadata
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS processing_metadata (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -261,8 +170,6 @@ class DataManager:
                     notes TEXT
                 )
             ''')
-
-            # Processing watermarks
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS processing_watermarks (
                     data_source TEXT PRIMARY KEY,
@@ -270,77 +177,36 @@ class DataManager:
                     last_update_time TIMESTAMP
                 )
             ''')
-
             conn.commit()
         logger.info(f"Database initialized at {self.db_path}")
 
-    def _insert_records(self, conn, rows):
-        """Helper method to insert wine match records"""
-        try:
-            cursor = conn.cursor()
-            cursor.executemany(
-                "INSERT INTO wine_matches (wine_id, match_id, score) VALUES (?, ?, ?)",
-                rows
-            )
-            conn.commit()
-        except Exception as e:
-            logger.error(f"Failed to insert records: {e}")
-            # Don’t raise the exception – insert errors shouldn’t stop processing
-
     def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
-        """Store sales data chunk and return list of IDs"""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                # Get starting row ID before insert
                 cursor = conn.execute("SELECT COUNT(*) FROM sales_data")
                 start_id = cursor.fetchone()[0] + 1
-
-                # Insert data
                 df.to_sql('sales_data', conn, if_exists='append', index=False)
-
-                # Return range of IDs for inserted rows
                 ids = list(range(start_id, start_id + len(df)))
                 conn.commit()
                 return ids
-
         except Exception as e:
             logger.error(f"Error storing sales chunk: {e}")
             return []
 
-    def get_recent_sales_data(self, days: int = 30) -> pd.DataFrame:
-        """Get recent sales data for incremental updates"""
-        query = f"""
-            SELECT * FROM sales_data 
-            WHERE created_at >= datetime('now', '-{days} days')
-            AND item_type = 'WINE'
-            ORDER BY created_at DESC
-        """
-        with sqlite3.connect(self.db_path) as conn:
-            df = pd.read_sql_query(query, conn)
-        return df
-
     def store_matches(self, matches: List[Dict]):
-        """Store matching results"""
         if not matches:
             return
         try:
             with sqlite3.connect(self.db_path) as conn:
-                df_matches = pd.DataFrame(matches)
-                df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
+                pd.DataFrame(matches).to_sql('matched_results', conn, if_exists='append', index=False)
                 conn.commit()
         except Exception as e:
             logger.error(f"Error storing matches: {e}")
 
-
-
 class OptimizedWineMatcher:
-    """Optimized wine matching with parallel processing and caching"""
-
     def __init__(self, config: ProcessingConfig):
         self.config = config
         self.cache = {}
-
-        # Load cache if it exists
         if config.cache_enabled and os.path.exists('match_cache.pkl'):
             try:
                 with open('match_cache.pkl', 'rb') as f:
@@ -349,7 +215,8 @@ class OptimizedWineMatcher:
             except Exception as e:
                 logger.warning(f"Could not load cache: {e}")
 
-    def clean_text_for_matching(self, text: str) -> str:
+    @staticmethod
+    def clean_text_for_matching(text: str) -> str:
         if pd.isna(text):
             return ""
         text = str(text).upper()
@@ -359,14 +226,13 @@ class OptimizedWineMatcher:
             'P/GRIG': 'PINOT GRIGIO', 'P/GRIS': 'PINOT GRIS', 'P/NOIR': 'PINOT NOIR',
             'CAB SAV': 'CABERNET SAUVIGNON', 'CAB': 'CABERNET', 'CHARD': 'CHARDONNAY'
         }
-        for abbrev, full_form in abbreviations.items():
-            text = text.replace(abbrev, full_form)
+        for abbrev, full in abbreviations.items():
+            text = text.replace(abbrev, full)
         text = re.sub(r'[^\w\s]', ' ', text)
         text = ' '.join(text.split())
         return text.strip()
 
     def match_chunk_parallel(self, sales_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
-        """Match a chunk of sales data against reviews using parallel processing"""
         wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy() if 'ITEM_TYPE' in sales_chunk.columns else sales_chunk.copy()
         if len(wine_sales) == 0:
             return []
@@ -376,20 +242,13 @@ class OptimizedWineMatcher:
         if self.config.enable_parallel and len(wine_sales) > 100:
             chunk_size = max(10, len(wine_sales) // self.config.max_workers)
             chunks = [wine_sales[i:i + chunk_size] for i in range(0, len(wine_sales), chunk_size)]
-
             with ProcessPoolExecutor(max_workers=self.config.max_workers) as executor:
-                futures = [
-                    executor.submit(
-                        OptimizedWineMatcher._process_wine_chunk, chunk, review_data
-                    )
-                    for chunk in chunks
-                ]
+                futures = [executor.submit(self._process_wine_chunk, chunk, review_data) for chunk in chunks]
                 for future in as_completed(futures):
                     matches.extend(future.result())
         else:
             matches = self._process_wine_chunk(wine_sales, review_data)
 
-        # Apply caching in main process
         if self.config.cache_enabled:
             for match in matches:
                 if match['wine_name_extracted'] not in self.cache:
@@ -399,11 +258,9 @@ class OptimizedWineMatcher:
 
     @staticmethod
     def _process_wine_chunk(wine_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
-        """Static method for parallel-safe wine chunk processing"""
         matches = []
         for _, row in wine_chunk.iterrows():
-            item_desc = row.get('ITEM_DESCRIPTION', '')
-            wine_name = OptimizedWineMatcher.clean_text_for_matching(None, item_desc)
+            wine_name = OptimizedWineMatcher.clean_text_for_matching(row.get('ITEM_DESCRIPTION', ''))
             best_match = OptimizedWineMatcher._find_wine_match_static(wine_name, review_data)
             if best_match['match_score'] >= 0.6:
                 matches.append({
@@ -420,27 +277,21 @@ class OptimizedWineMatcher:
 
     @staticmethod
     def _find_wine_match_static(wine_name: str, review_data: pd.DataFrame) -> Dict:
-        """Static, parallel-safe wine matching"""
         if len(wine_name) < 3:
             return {'wine_name': wine_name, 'match_score': 0}
-
         search_words = wine_name.split()
-        if not search_words:
-            return {'wine_name': wine_name, 'match_score': 0}
-
         mask = pd.Series([False] * len(review_data))
         for word in search_words:
             if len(word) > 2:
                 mask |= review_data['title'].str.contains(word, case=False, na=False)
-
         potential_matches = review_data[mask].head(50)
-        if len(potential_matches) == 0:
+        if potential_matches.empty:
             return {'wine_name': wine_name, 'match_score': 0}
 
         best_score = 0
         best_match = None
         for _, candidate in potential_matches.iterrows():
-            candidate_clean = OptimizedWineMatcher.clean_text_for_matching(None, candidate['title'])
+            candidate_clean = OptimizedWineMatcher.clean_text_for_matching(candidate['title'])
             score = SequenceMatcher(None, wine_name, candidate_clean).ratio()
             if score > best_score:
                 best_score = score
@@ -452,7 +303,6 @@ class OptimizedWineMatcher:
         return {'wine_name': wine_name, 'match_score': 0}
 
     def save_cache(self):
-        """Save matching cache to disk"""
         if self.config.cache_enabled and self.cache:
             try:
                 with open('match_cache.pkl', 'wb') as f:
@@ -461,121 +311,74 @@ class OptimizedWineMatcher:
             except Exception as e:
                 logger.error(f"Could not save cache: {e}")
 
+# ------------------ Pipeline ------------------
 
 class WineMatchingPipeline:
-    """Main pipeline orchestrator"""
-    
     def __init__(self, api_config: APIConfig, processing_config: ProcessingConfig):
         self.data_manager = DataManager(processing_config.database_path)
         self.api = MontgomeryCountyAPI(api_config)
-        self.api.data_manager = self.data_manager
         self.matcher = OptimizedWineMatcher(processing_config)
         self.processing_config = processing_config
-    
+
+    def _load_review_data(self) -> Optional[pd.DataFrame]:
+        try:
+            df = pd.read_csv('data/winemag-data-130k-v2.csv')
+            return df
+        except Exception as e:
+            logger.error(f"Error loading wine review data: {e}")
+            return None
+
     def run_full_update(self, max_records: Optional[int] = None):
-        """Run complete data update and matching process"""
         start_time = datetime.now()
         total_processed = 0
         total_matches = 0
-        
-        logger.info("Starting full wine matching pipeline")
-        
-        # Load review data (assuming it's static or updated separately)
+
         review_data = self._load_review_data()
-        
-        if review_data is None or len(review_data) == 0:
+        if review_data is None or review_data.empty:
             logger.error("No review data available")
             return
-        
+
         try:
-            # Process data in chunks
             chunk_count = 0
             for chunk_df in self.api.fetch_all_data_streaming(max_records):
-                logger.info(f"Processing chunk with {len(chunk_df)} records")
-                
-                # Standardize column names
-                chunk_df = self.api.clean_chunk(pd.DataFrame(chunk_df))
-    
-                # Store sales data
+                chunk_df = self.api.clean_chunk(chunk_df)
                 sales_ids = self.data_manager.store_sales_chunk(chunk_df)
-                
-                # Add IDs to chunk for matching
                 chunk_df['id'] = sales_ids
-                
-                # Match wines in this chunk
                 matches = self.matcher.match_chunk_parallel(chunk_df, review_data)
-                
-                # Store matches
                 if matches:
                     self.data_manager.store_matches(matches)
                     total_matches += len(matches)
-                
                 total_processed += len(chunk_df)
                 chunk_count += 1
-                
-                # Save cache every 5 chunks (every 5,000 records)
                 if chunk_count % 5 == 0:
                     self.matcher.save_cache()
-                    logger.info(f"Intermediate cache saved after {total_processed:,} records")
-                
-                logger.info(f"Chunk complete: {len(matches)} matches found")
-            
-            # Save cache at completion
-            self.matcher.save_cache()
-            
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
-            self._log_processing_metadata(
-                'full_update', start_time, datetime.now(),
-                total_processed, total_matches, False, str(e)
-            )
-            raise
         finally:
-            # Always try to save cache
-            try:
-                self.matcher.save_cache()
-                logger.info("Cache saved")
-            except Exception as cache_error:
-                logger.error(f"Failed to save cache: {cache_error}")
-    
-    def run_incremental_update(self):
-        """Run incremental update using checkpoint from processing_watermarks"""
-        logger.info("Running incremental update based on last processed checkpoint")
+            self.matcher.save_cache()
+            logger.info(f"Full update complete: {total_processed} records processed, {total_matches} matches found")
 
-        # Determine last processed ID from watermark table
+    def run_incremental_update(self):
         with sqlite3.connect(self.data_manager.db_path) as conn:
             cursor = conn.execute(
                 "SELECT last_processed_offset FROM processing_watermarks WHERE data_source='sales_data'"
             )
             row = cursor.fetchone()
             last_offset = row[0] if row else 0
-
-            # Get new sales data after last processed ID
-            query = f"""
-                SELECT * FROM sales_data
-                WHERE id > {last_offset} AND item_type = 'WINE'
-                ORDER BY id ASC
-            """
+            query = f"SELECT * FROM sales_data WHERE id > {last_offset} AND item_type = 'WINE' ORDER BY id ASC"
             recent_data = pd.read_sql_query(query, conn)
 
         if recent_data.empty:
             logger.info("No new sales data to process")
             return
 
-        # Load review data
         review_data = self._load_review_data()
-        if review_data is None or len(review_data) == 0:
+        if review_data is None or review_data.empty:
             logger.error("No review data available; skipping incremental update")
             return
 
-        # Match new wine data
         matches = self.matcher.match_chunk_parallel(recent_data, review_data)
-
-        # Store matches
         if matches:
             self.data_manager.store_matches(matches)
 
-        # Update watermark with the latest processed ID
         new_offset = recent_data['id'].max()
         with sqlite3.connect(self.data_manager.db_path) as conn:
             conn.execute("""
@@ -587,61 +390,12 @@ class WineMatchingPipeline:
             """, ('sales_data', new_offset))
             conn.commit()
 
-        # Always define matches for logging, even if empty
-        matches_count = len(matches) if matches else 0
-        logger.info(f"Incremental update complete: {matches_count} new matches processed, checkpoint updated to ID {new_offset}")
+        logger.info(f"Incremental update complete: {len(matches)} new matches, checkpoint updated to ID {new_offset}")
 
+# ------------------ Main ------------------
 
-    logger.info(f"Incremental update complete: {len(matches)} new matches processed, checkpoint updated to ID {new_offset}")
-
-    
-    def _load_review_data(self) -> Optional[pd.DataFrame]:
-        """Load wine review data from Kaggle dataset or cached file"""
-        try:
-            print("DEBUG: Attempting to load wine review data...")
-            df = pd.read_csv('data/winemag-data-130k-v2.csv')
-            print(f"DEBUG: Successfully loaded {len(df)} rows of wine review data")
-            print(f"DEBUG: Columns: {list(df.columns)}")
-            return df
-        except FileNotFoundError:
-            print("DEBUG: FileNotFoundError occurred")
-            logger.error("Wine review data not found - download from Kaggle first")
-            return None
-        except Exception as e:
-            print(f"DEBUG: Unexpected error loading wine data: {e}")
-            logger.error(f"Error loading wine review data: {e}")
-            return None
-    
-    def _log_processing_metadata(self, process_type: str, start_time: datetime,
-                               end_time: datetime, records_processed: int,
-                               matches_found: int, success: bool, notes: str):
-        """Log processing metadata to database"""
-        conn = sqlite3.connect(self.data_manager.db_path)
-        
-        metadata = {
-            'process_type': process_type,
-            'start_time': start_time.isoformat(),
-            'end_time': end_time.isoformat(),
-            'records_processed': records_processed,
-            'matches_found': matches_found,
-            'success': success,
-            'notes': notes
-        }
-        
-        df_meta = pd.DataFrame([metadata])
-        df_meta.to_sql('processing_metadata', conn, if_exists='append', index=False)
-        conn.commit()
-        conn.close()
-
-
-# Example usage and configuration
 def main():
-    """Main execution function"""
-    
-    # Configuration
-    import json
-
-    # Load from config file
+    import sys
     with open('config.json', 'r') as f:
         config_data = json.load(f)
 
@@ -650,33 +404,20 @@ def main():
         chunk_size=config_data['api']['chunk_size'],
         rate_limit_delay=config_data['api']['rate_limit_delay']
     )
+    processing_config = ProcessingConfig(database_path="wine_data.db")
 
-    
-    processing_config = ProcessingConfig(
-        matching_threshold=0.6,
-        enable_parallel=True,
-        max_workers=4,
-        cache_enabled=True,
-        database_path="wine_data.db"
-    )
-    
-    # Create pipeline
     pipeline = WineMatchingPipeline(api_config, processing_config)
-    
-    # Run different update types based on schedule
-    import sys
-    
+
     if len(sys.argv) > 1:
         mode = sys.argv[1]
         if mode == "full":
             pipeline.run_full_update()
         elif mode == "incremental":
-            pipeline.run_incremental_update(days=7)
+            pipeline.run_incremental_update()
         elif mode == "test":
-            pipeline.run_full_update(max_records=1000)  # Test with 1000 records
+            pipeline.run_full_update(max_records=1000)
     else:
         print("Usage: python aws_wine_matching_system.py [full|incremental|test]")
-
 
 if __name__ == "__main__":
     main()
