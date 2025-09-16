@@ -335,11 +335,11 @@ class DataManager:
 
 class OptimizedWineMatcher:
     """Optimized wine matching with parallel processing and caching"""
-    
+
     def __init__(self, config: ProcessingConfig):
         self.config = config
         self.cache = {}
-        
+
         # Load cache if it exists
         if config.cache_enabled and os.path.exists('match_cache.pkl'):
             try:
@@ -348,154 +348,108 @@ class OptimizedWineMatcher:
                 logger.info(f"Loaded {len(self.cache)} cached matches")
             except Exception as e:
                 logger.warning(f"Could not load cache: {e}")
-    
+
     def clean_text_for_matching(self, text: str) -> str:
-        """Enhanced text cleaning for matching"""
         if pd.isna(text):
             return ""
-        
         text = str(text).upper()
-        
-        # Remove volume indicators
         text = re.sub(r'\s*-\s*(750ML|1\.5L|375ML|187ML|3L|500ML|1L)\s*$', '', text)
-        
-        # Expand common abbreviations
         abbreviations = {
             'CH ': 'CHATEAU ', 'DOM ': 'DOMAINE ', 'S/BLC': 'SAUVIGNON BLANC',
             'P/GRIG': 'PINOT GRIGIO', 'P/GRIS': 'PINOT GRIS', 'P/NOIR': 'PINOT NOIR',
             'CAB SAV': 'CABERNET SAUVIGNON', 'CAB': 'CABERNET', 'CHARD': 'CHARDONNAY'
         }
-        
         for abbrev, full_form in abbreviations.items():
             text = text.replace(abbrev, full_form)
-        
-        # Clean punctuation and extra spaces
         text = re.sub(r'[^\w\s]', ' ', text)
         text = ' '.join(text.split())
-        
         return text.strip()
-    
-    def match_chunk_parallel(self, sales_chunk: pd.DataFrame, 
-                           review_data: pd.DataFrame) -> List[Dict]:
+
+    def match_chunk_parallel(self, sales_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
         """Match a chunk of sales data against reviews using parallel processing"""
-        
-        wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy()
-        
+        wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy() if 'ITEM_TYPE' in sales_chunk.columns else sales_chunk.copy()
         if len(wine_sales) == 0:
             return []
-        
+
         matches = []
-        cache_hits = 0
-        
+
         if self.config.enable_parallel and len(wine_sales) > 100:
-            # Use parallel processing for large chunks
             chunk_size = max(10, len(wine_sales) // self.config.max_workers)
-            chunks = [wine_sales[i:i+chunk_size] for i in range(0, len(wine_sales), chunk_size)]
-            
+            chunks = [wine_sales[i:i + chunk_size] for i in range(0, len(wine_sales), chunk_size)]
+
             with ProcessPoolExecutor(max_workers=self.config.max_workers) as executor:
                 futures = [
-                    executor.submit(self._process_wine_chunk, chunk, review_data)
+                    executor.submit(
+                        OptimizedWineMatcher._process_wine_chunk, chunk, review_data
+                    )
                     for chunk in chunks
                 ]
-                
                 for future in as_completed(futures):
-                    chunk_matches = future.result()
-                    matches.extend(chunk_matches)
+                    matches.extend(future.result())
         else:
-            # Sequential processing for smaller chunks
             matches = self._process_wine_chunk(wine_sales, review_data)
-        
-        return matches
-    
-    def _process_wine_chunk(self, wine_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
 
-        """Process a single chunk of wine data"""
-        matches = []
-        
-        for _, row in wine_chunk.iterrows():
-            item_desc = row['ITEM_DESCRIPTION']
-            
-            # Check cache first
-            if item_desc in self.cache:
-                match_result = self.cache[item_desc]
-            else:
-                # Find match
-                wine_name = self.clean_text_for_matching(item_desc)
-                match_result = self._find_wine_match(wine_name)
-                
-                # Cache result
-                if self.config.cache_enabled:
-                    self.cache[item_desc] = match_result
-            
-            if match_result['match_score'] >= self.config.matching_threshold:
-                match_dict = {
-                    'sales_id': row.get('id'),
-                    'wine_name_extracted': match_result['wine_name'],
-                    'review_match_score': match_result['match_score'],
-                    'review_title': match_result.get('title', ''),
-                    'review_country': match_result.get('country', ''),
-                    'review_variety': match_result.get('variety', ''),
-                    'review_points': match_result.get('points', 0),
-                    'review_price': match_result.get('price', 0.0)
-                }
-                matches.append(match_dict)
-        
+        # Apply caching in main process
+        if self.config.cache_enabled:
+            for match in matches:
+                if match['wine_name_extracted'] not in self.cache:
+                    self.cache[match['wine_name_extracted']] = match
+
         return matches
-    
-    @lru_cache(maxsize=50000)
-    def _find_wine_match(self, wine_name: str) -> Dict:
-        """Find best matching wine review"""
+
+    @staticmethod
+    def _process_wine_chunk(wine_chunk: pd.DataFrame, review_data: pd.DataFrame) -> List[Dict]:
+        """Static method for parallel-safe wine chunk processing"""
+        matches = []
+        for _, row in wine_chunk.iterrows():
+            item_desc = row.get('ITEM_DESCRIPTION', '')
+            wine_name = OptimizedWineMatcher.clean_text_for_matching(None, item_desc)
+            best_match = OptimizedWineMatcher._find_wine_match_static(wine_name, review_data)
+            if best_match['match_score'] >= 0.6:
+                matches.append({
+                    'sales_id': row.get('id'),
+                    'wine_name_extracted': best_match['wine_name'],
+                    'review_match_score': best_match['match_score'],
+                    'review_title': best_match.get('title', ''),
+                    'review_country': best_match.get('country', ''),
+                    'review_variety': best_match.get('variety', ''),
+                    'review_points': best_match.get('points', 0),
+                    'review_price': best_match.get('price', 0.0)
+                })
+        return matches
+
+    @staticmethod
+    def _find_wine_match_static(wine_name: str, review_data: pd.DataFrame) -> Dict:
+        """Static, parallel-safe wine matching"""
         if len(wine_name) < 3:
             return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Pre-filter using vectorized string operations
+
         search_words = wine_name.split()
         if not search_words:
             return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Create boolean mask for potential matches
+
         mask = pd.Series([False] * len(review_data))
-        
         for word in search_words:
             if len(word) > 2:
                 mask |= review_data['title'].str.contains(word, case=False, na=False)
-        
-        potential_matches = review_data[mask].head(50)  # Limit for performance
-        
+
+        potential_matches = review_data[mask].head(50)
         if len(potential_matches) == 0:
             return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Find best match using vectorized operations
+
         best_score = 0
         best_match = None
-        
         for _, candidate in potential_matches.iterrows():
-            candidate_clean = self.clean_text_for_matching(candidate['title'])
+            candidate_clean = OptimizedWineMatcher.clean_text_for_matching(None, candidate['title'])
             score = SequenceMatcher(None, wine_name, candidate_clean).ratio()
-            
             if score > best_score:
                 best_score = score
                 best_match = candidate
-        
-        if best_match is not None and best_score >= self.config.matching_threshold:
-            return {
-                'wine_name': wine_name,
-                'match_score': best_score,
-                **best_match.to_dict()
-            }
-        
-        return {'wine_name': wine_name, 'match_score': 0}
-    
-    def save_cache(self):
-        """Save matching cache to disk"""
-        if self.config.cache_enabled and self.cache:
-            try:
-                with open('match_cache.pkl', 'wb') as f:
-                    pickle.dump(self.cache, f)
-                logger.info(f"Saved {len(self.cache)} cached matches")
-            except Exception as e:
-                logger.error(f"Could not save cache: {e}")
 
+        if best_match is not None and best_score >= 0.6:
+            return {'wine_name': wine_name, 'match_score': best_score, **best_match.to_dict()}
+
+        return {'wine_name': wine_name, 'match_score': 0}
 
 class WineMatchingPipeline:
     """Main pipeline orchestrator"""
