@@ -123,7 +123,7 @@ class MontgomeryCountyAPI:
             total_records = min(total_records, max_records)
             
         #Get starting offset from watermark
-        start_offset = self.data.get_last_watermark()
+        start_offset = self.data_manager.get_last_watermark()
         logger.info(f"Resuming from offest: {start_offset}")
         
         print(f"DEBUG: Total records to fetch: {total_records}")
