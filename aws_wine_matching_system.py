@@ -157,8 +157,11 @@ class MontgomeryCountyAPI:
         # synchronous wrapper for compatibility
         return asyncio.run(self._fetch_all_chunks(0, max_records))
 
-    def fetch_all_data_streaming(self, max_records):
+    def fetch_all_data_streaming(self, max_records=None):
         """Synchronous generator that yields DataFrames chunk-by-chunk"""
+        if max_records is None:
+            max_records = 50000  # Or self.config.max_limit if you have it
+
         async def wrapper():
             async for chunk in self._fetch_all_chunks(0, max_records):
                 yield pd.DataFrame(chunk)
@@ -174,6 +177,7 @@ class MontgomeryCountyAPI:
                 yield chunk_df
         except StopAsyncIteration:
             loop.close()
+
 
     
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
