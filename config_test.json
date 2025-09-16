@@ -2,7 +2,7 @@
   "api": {
     "base_url": "https://data.montgomerycountymd.gov/resource/v76h-r7br.json",
     "app_token": "",
-    "chunk_size": 100,
+    "chunk_size": 1000,
     "rate_limit_delay": 1.0
   },
   "processing": {

@@ -1,2 +1,607 @@
 2025-09-15 10:58:08,788 - INFO - Database initialized at wine_data.db
 2025-09-15 10:58:13,744 - INFO - Database initialized at wine_data.db
+2025-09-15 11:55:50,681 - INFO - Database initialized at wine_data.db
+2025-09-15 11:57:55,434 - INFO - Database initialized at wine_data.db
+2025-09-15 11:58:04,777 - INFO - Database initialized at wine_data.db
+2025-09-15 11:58:04,778 - INFO - Starting full wine matching pipeline
+2025-09-15 11:58:04,778 - ERROR - Wine review data not found - download from Kaggle first
+2025-09-15 11:58:04,778 - ERROR - No review data available
+2025-09-15 13:19:00,224 - INFO - Database initialized at wine_data.db
+2025-09-15 13:19:00,224 - INFO - Starting full wine matching pipeline
+2025-09-15 13:19:00,225 - ERROR - Wine review data not found - download from Kaggle first
+2025-09-15 13:19:00,225 - ERROR - No review data available
+2025-09-15 13:20:41,449 - INFO - Database initialized at wine_data.db
+2025-09-15 13:20:41,449 - INFO - Starting full wine matching pipeline
+2025-09-15 13:20:41,450 - ERROR - Wine review data not found - download from Kaggle first
+2025-09-15 13:20:41,450 - ERROR - No review data available
+2025-09-15 13:22:11,686 - INFO - Database initialized at wine_data.db
+2025-09-15 13:22:11,686 - INFO - Starting full wine matching pipeline
+2025-09-15 13:22:11,687 - ERROR - Wine review data not found - download from Kaggle first
+2025-09-15 13:22:11,687 - ERROR - No review data available
+2025-09-15 13:24:43,702 - INFO - Database initialized at wine_data.db
+2025-09-15 13:24:43,702 - INFO - Starting full wine matching pipeline
+2025-09-15 13:24:44,835 - ERROR - Failed to get total record count: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/api/v3/views/jiax-q27w/query.json?$select=count(*)
+2025-09-15 13:24:44,835 - INFO - Fetching 0 records from Montgomery County API
+2025-09-15 13:24:44,845 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.133001
+2025-09-15 13:29:05,609 - INFO - Database initialized at wine_data.db
+2025-09-15 13:29:05,610 - INFO - Starting full wine matching pipeline
+2025-09-15 13:29:06,647 - ERROR - Failed to get total record count: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/api/v3/views/jiax-q27w/query.json?$select=count(*)
+2025-09-15 13:29:06,647 - INFO - Fetching 0 records from Montgomery County API
+2025-09-15 13:29:06,654 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.037526
+2025-09-15 13:31:17,514 - INFO - Database initialized at wine_data.db
+2025-09-15 13:31:17,514 - INFO - Starting full wine matching pipeline
+2025-09-15 13:31:18,574 - ERROR - Failed to get total record count: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?$select=count(*)
+2025-09-15 13:31:18,574 - INFO - Fetching 0 records from Montgomery County API
+2025-09-15 13:31:18,581 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.059868
+2025-09-15 13:33:50,231 - INFO - Database initialized at wine_data.db
+2025-09-15 13:33:50,231 - INFO - Starting full wine matching pipeline
+2025-09-15 13:33:51,279 - ERROR - Failed to access API: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?$limit=1
+2025-09-15 13:33:51,279 - INFO - Fetching 0 records from Montgomery County API
+2025-09-15 13:33:51,286 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.048454
+2025-09-15 13:39:45,262 - INFO - Database initialized at wine_data.db
+2025-09-15 13:39:45,262 - INFO - Starting full wine matching pipeline
+2025-09-15 13:39:46,306 - ERROR - Failed to access API: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?$limit=1
+2025-09-15 13:39:46,306 - INFO - Fetching 0 records from Montgomery County API
+2025-09-15 13:39:46,314 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.044058
+2025-09-15 13:40:11,695 - INFO - Database initialized at wine_data.db
+2025-09-15 13:40:11,695 - INFO - Starting full wine matching pipeline
+2025-09-15 13:40:12,911 - INFO - API accessible, using estimated record count
+2025-09-15 13:40:12,912 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:40:12,913 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:40:12,958 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0&%24order=date+DESC
+2025-09-15 13:40:12,958 - WARNING - No data returned for offset 0
+2025-09-15 13:40:12,966 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.262883
+2025-09-15 13:42:39,817 - INFO - Database initialized at wine_data.db
+2025-09-15 13:42:39,817 - INFO - Starting full wine matching pipeline
+2025-09-15 13:42:40,981 - INFO - API accessible, using estimated record count
+2025-09-15 13:42:40,982 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:42:40,982 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:42:41,039 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0
+2025-09-15 13:42:41,039 - WARNING - No data returned for offset 0
+2025-09-15 13:42:41,046 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.222810
+2025-09-15 13:45:17,493 - INFO - Database initialized at wine_data.db
+2025-09-15 13:45:17,494 - INFO - Starting full wine matching pipeline
+2025-09-15 13:45:18,695 - INFO - API accessible, using estimated record count
+2025-09-15 13:45:18,696 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:45:18,703 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.202263
+2025-09-15 13:46:56,076 - INFO - Database initialized at wine_data.db
+2025-09-15 13:46:56,076 - INFO - Starting full wine matching pipeline
+2025-09-15 13:46:57,418 - INFO - API accessible, using estimated record count
+2025-09-15 13:46:57,419 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:46:57,420 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:46:57,465 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0
+2025-09-15 13:46:57,465 - WARNING - No data returned for offset 0
+2025-09-15 13:46:57,472 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.388690
+2025-09-15 13:49:27,846 - INFO - Database initialized at wine_data.db
+2025-09-15 13:49:27,846 - INFO - Starting full wine matching pipeline
+2025-09-15 13:49:29,061 - INFO - API accessible, using estimated record count
+2025-09-15 13:49:29,062 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:49:29,062 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:49:29,119 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0
+2025-09-15 13:49:29,119 - WARNING - No data returned for offset 0
+2025-09-15 13:49:29,126 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.273437
+2025-09-15 13:50:28,245 - INFO - Database initialized at wine_data.db
+2025-09-15 13:50:28,245 - INFO - Starting full wine matching pipeline
+2025-09-15 13:50:29,603 - INFO - API accessible, using estimated record count
+2025-09-15 13:50:29,604 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:50:29,604 - INFO - Fetching records 500 to 1,000
+2025-09-15 13:50:29,655 - ERROR - Failed to fetch chunk at offset 500: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=500&%24offset=500
+2025-09-15 13:50:29,656 - WARNING - No data returned for offset 500
+2025-09-15 13:50:29,663 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.410367
+2025-09-15 13:52:00,638 - INFO - Database initialized at wine_data.db
+2025-09-15 13:52:00,639 - INFO - Starting full wine matching pipeline
+2025-09-15 13:52:03,125 - INFO - API accessible, using estimated record count
+2025-09-15 13:52:03,127 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:52:03,127 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:52:03,206 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0
+2025-09-15 13:52:03,206 - WARNING - No data returned for offset 0
+2025-09-15 13:52:03,218 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:02.567612
+2025-09-15 13:54:02,808 - INFO - Database initialized at wine_data.db
+2025-09-15 13:54:02,808 - INFO - Starting full wine matching pipeline
+2025-09-15 13:54:04,150 - INFO - API accessible, using estimated record count
+2025-09-15 13:54:04,151 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 13:54:04,152 - INFO - Fetching records 0 to 1,000
+2025-09-15 13:54:04,195 - ERROR - Failed to fetch chunk at offset 0: 403 Client Error: Forbidden for url: https://data.montgomerycountymd.gov/resource/v76h-r7br.json?%24limit=1000&%24offset=0
+2025-09-15 13:54:04,196 - WARNING - No data returned for offset 0
+2025-09-15 13:54:04,203 - INFO - Pipeline complete: 0 records processed, 0 matches found in 0:00:01.387724
+2025-09-15 14:01:45,748 - INFO - Database initialized at wine_data.db
+2025-09-15 14:01:45,749 - INFO - Starting full wine matching pipeline
+2025-09-15 14:01:47,004 - INFO - API accessible, using estimated record count
+2025-09-15 14:01:47,005 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 14:01:47,005 - INFO - Fetching records 0 to 1,000
+2025-09-15 14:01:47,807 - INFO - Processing chunk with 1000 records
+2025-09-15 14:01:47,826 - ERROR - Error storing sales chunk: Invalid parameter `method`: replace
+2025-09-15 14:01:47,827 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-15 14:04:14,531 - INFO - Database initialized at wine_data.db
+2025-09-15 14:04:14,532 - INFO - Starting full wine matching pipeline
+2025-09-15 14:04:15,774 - INFO - API accessible, using estimated record count
+2025-09-15 14:04:15,776 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 14:04:15,776 - INFO - Fetching records 0 to 1,000
+2025-09-15 14:04:16,513 - INFO - Processing chunk with 1000 records
+2025-09-15 14:04:16,516 - ERROR - Error storing sales chunk: table sales_data has no column named CALENDAR_YEAR
+2025-09-15 14:04:16,516 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-15 14:06:50,241 - INFO - Database initialized at wine_data.db
+2025-09-15 14:06:50,242 - INFO - Starting full wine matching pipeline
+2025-09-15 14:06:51,582 - INFO - API accessible, using estimated record count
+2025-09-15 14:06:51,582 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 14:06:51,583 - INFO - Fetching records 0 to 1,000
+2025-09-15 14:06:52,396 - INFO - Processing chunk with 1000 records
+2025-09-15 14:06:52,399 - ERROR - Error storing sales chunk: table sales_data has no column named CALENDAR_YEAR
+2025-09-15 14:06:52,399 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-15 14:10:24,705 - INFO - Database initialized at wine_data.db
+2025-09-15 14:10:24,706 - INFO - Starting full wine matching pipeline
+2025-09-15 14:10:25,917 - INFO - API accessible, using estimated record count
+2025-09-15 14:10:25,918 - INFO - Fetching 1,000 records from Montgomery County API
+2025-09-15 14:10:25,918 - INFO - Fetching records 0 to 1,000
+2025-09-15 14:10:26,828 - INFO - Processing chunk with 1000 records
+2025-09-15 14:13:39,114 - INFO - Chunk complete: 28 matches found
+2025-09-15 14:13:39,146 - INFO - Pipeline complete: 1,000 records processed, 28 matches found in 0:03:14.430363
+2025-09-15 14:14:54,182 - INFO - Database initialized at wine_data.db
+2025-09-15 14:14:54,182 - INFO - Starting full wine matching pipeline
+2025-09-15 14:14:55,503 - INFO - API accessible, using estimated record count
+2025-09-15 14:14:55,504 - INFO - Fetching 10,000 records from Montgomery County API
+2025-09-15 14:14:55,504 - INFO - Fetching records 0 to 1,000
+2025-09-15 14:14:56,257 - INFO - Processing chunk with 1000 records
+2025-09-15 14:18:07,116 - INFO - Chunk complete: 28 matches found
+2025-09-15 14:18:07,127 - INFO - Fetching records 1,000 to 2,000
+2025-09-15 14:18:08,170 - INFO - Processing chunk with 1000 records
+2025-09-15 14:21:57,307 - INFO - Chunk complete: 40 matches found
+2025-09-15 14:21:57,324 - INFO - Fetching records 2,000 to 3,000
+2025-09-15 14:21:58,289 - INFO - Processing chunk with 1000 records
+2025-09-15 14:26:13,116 - INFO - Chunk complete: 42 matches found
+2025-09-15 14:26:13,156 - INFO - Fetching records 3,000 to 4,000
+2025-09-15 14:26:14,627 - INFO - Processing chunk with 1000 records
+2025-09-15 14:32:40,918 - INFO - Chunk complete: 56 matches found
+2025-09-15 14:32:40,956 - INFO - Fetching records 4,000 to 5,000
+2025-09-15 14:32:42,726 - INFO - Processing chunk with 1000 records
+2025-09-15 14:37:06,550 - INFO - Chunk complete: 58 matches found
+2025-09-15 14:37:06,569 - INFO - Fetching records 5,000 to 6,000
+2025-09-15 14:37:07,651 - INFO - Processing chunk with 1000 records
+2025-09-15 14:39:29,274 - INFO - Chunk complete: 31 matches found
+2025-09-15 14:39:29,283 - INFO - Fetching records 6,000 to 7,000
+2025-09-15 14:39:30,161 - INFO - Processing chunk with 1000 records
+2025-09-15 14:46:15,989 - INFO - Chunk complete: 88 matches found
+2025-09-15 14:46:16,001 - INFO - Fetching records 7,000 to 8,000
+2025-09-15 14:46:16,933 - INFO - Processing chunk with 1000 records
+2025-09-15 14:51:13,508 - INFO - Chunk complete: 47 matches found
+2025-09-15 14:51:13,544 - INFO - Fetching records 8,000 to 9,000
+2025-09-15 14:51:15,408 - INFO - Processing chunk with 1000 records
+2025-09-15 14:57:16,296 - INFO - Chunk complete: 56 matches found
+2025-09-15 14:57:16,297 - INFO - Fetching records 9,000 to 10,000
+2025-09-15 14:57:17,245 - INFO - Processing chunk with 1000 records
+2025-09-15 15:02:08,753 - INFO - Chunk complete: 41 matches found
+2025-09-15 15:02:08,822 - INFO - Pipeline complete: 10,000 records processed, 487 matches found in 0:47:14.630712
+2025-09-15 18:09:05,687 - INFO - Database initialized at wine_data.db
+2025-09-15 18:09:05,688 - INFO - Starting full wine matching pipeline
+2025-09-15 18:09:35,322 - INFO - Estimated total records: 307616
+2025-09-15 18:09:35,322 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-15 18:09:35,322 - INFO - Fetching records 0 to 1,000
+2025-09-15 18:09:36,102 - INFO - Processing chunk with 1000 records
+2025-09-15 18:12:48,040 - INFO - Chunk complete: 28 matches found
+2025-09-15 18:12:48,062 - INFO - Fetching records 1,000 to 2,000
+2025-09-15 18:12:49,520 - INFO - Processing chunk with 1000 records
+2025-09-15 18:16:40,118 - INFO - Chunk complete: 38 matches found
+2025-09-15 18:16:40,162 - INFO - Fetching records 2,000 to 3,000
+2025-09-15 18:16:42,117 - INFO - Processing chunk with 1000 records
+2025-09-15 18:20:58,401 - INFO - Chunk complete: 43 matches found
+2025-09-15 18:20:58,429 - INFO - Fetching records 3,000 to 4,000
+2025-09-15 18:20:59,913 - INFO - Processing chunk with 1000 records
+2025-09-15 18:27:24,766 - INFO - Chunk complete: 56 matches found
+2025-09-15 18:27:24,798 - INFO - Fetching records 4,000 to 5,000
+2025-09-15 18:27:26,759 - INFO - Processing chunk with 1000 records
+2025-09-15 18:31:52,816 - INFO - Chunk complete: 57 matches found
+2025-09-15 18:31:52,851 - INFO - Fetching records 5,000 to 6,000
+2025-09-15 18:32:04,750 - INFO - Processing chunk with 1000 records
+2025-09-15 18:34:27,678 - INFO - Chunk complete: 34 matches found
+2025-09-15 18:34:27,723 - INFO - Fetching records 6,000 to 7,000
+2025-09-15 18:34:29,486 - INFO - Processing chunk with 1000 records
+2025-09-15 18:41:12,852 - INFO - Chunk complete: 88 matches found
+2025-09-15 18:41:12,892 - INFO - Fetching records 7,000 to 8,000
+2025-09-15 18:41:14,690 - INFO - Processing chunk with 1000 records
+2025-09-15 18:46:09,223 - INFO - Chunk complete: 48 matches found
+2025-09-15 18:46:09,224 - INFO - Fetching records 8,000 to 9,000
+2025-09-15 18:46:20,567 - INFO - Processing chunk with 1000 records
+2025-09-15 18:52:18,729 - INFO - Chunk complete: 56 matches found
+2025-09-15 18:52:18,731 - INFO - Fetching records 9,000 to 10,000
+2025-09-15 18:52:19,848 - INFO - Processing chunk with 1000 records
+2025-09-15 18:57:03,669 - INFO - Chunk complete: 43 matches found
+2025-09-15 18:57:03,695 - INFO - Fetching records 10,000 to 11,000
+2025-09-15 18:57:05,176 - INFO - Processing chunk with 1000 records
+2025-09-15 19:04:27,006 - INFO - Chunk complete: 110 matches found
+2025-09-15 19:04:27,048 - INFO - Fetching records 11,000 to 12,000
+2025-09-15 19:04:29,016 - INFO - Processing chunk with 1000 records
+2025-09-15 19:08:16,946 - INFO - Chunk complete: 24 matches found
+2025-09-15 19:08:16,946 - INFO - Fetching records 12,000 to 13,000
+2025-09-15 19:08:18,046 - INFO - Processing chunk with 1000 records
+2025-09-15 19:11:24,249 - INFO - Chunk complete: 29 matches found
+2025-09-15 19:11:24,290 - INFO - Fetching records 13,000 to 14,000
+2025-09-15 19:11:26,165 - INFO - Processing chunk with 1000 records
+2025-09-15 19:16:04,425 - INFO - Chunk complete: 32 matches found
+2025-09-15 19:16:04,471 - INFO - Fetching records 14,000 to 15,000
+2025-09-15 19:16:12,685 - INFO - Processing chunk with 1000 records
+2025-09-15 19:21:48,286 - INFO - Chunk complete: 45 matches found
+2025-09-15 19:21:48,317 - INFO - Fetching records 15,000 to 16,000
+2025-09-15 19:21:50,023 - INFO - Processing chunk with 1000 records
+2025-09-15 19:27:22,050 - INFO - Chunk complete: 54 matches found
+2025-09-15 19:27:22,089 - INFO - Fetching records 16,000 to 17,000
+2025-09-15 19:27:24,001 - INFO - Processing chunk with 1000 records
+2025-09-15 19:30:37,532 - INFO - Chunk complete: 39 matches found
+2025-09-15 19:30:37,571 - INFO - Fetching records 17,000 to 18,000
+2025-09-15 19:30:45,711 - INFO - Processing chunk with 1000 records
+2025-09-15 19:35:58,190 - INFO - Chunk complete: 80 matches found
+2025-09-15 19:35:58,225 - INFO - Fetching records 18,000 to 19,000
+2025-09-15 19:36:19,652 - INFO - Processing chunk with 1000 records
+2025-09-15 19:41:08,385 - INFO - Chunk complete: 53 matches found
+2025-09-15 19:41:08,385 - INFO - Fetching records 19,000 to 20,000
+2025-09-15 19:41:09,485 - INFO - Processing chunk with 1000 records
+2025-09-15 19:46:38,305 - INFO - Chunk complete: 63 matches found
+2025-09-15 19:46:38,311 - INFO - Fetching records 20,000 to 21,000
+2025-09-15 19:46:49,445 - INFO - Processing chunk with 1000 records
+2025-09-15 19:51:43,402 - INFO - Chunk complete: 40 matches found
+2025-09-15 19:51:43,432 - INFO - Fetching records 21,000 to 22,000
+2025-09-15 19:51:44,616 - INFO - Processing chunk with 1000 records
+2025-09-15 19:58:51,285 - INFO - Chunk complete: 106 matches found
+2025-09-15 19:58:51,296 - INFO - Fetching records 22,000 to 23,000
+2025-09-15 19:58:52,398 - INFO - Processing chunk with 1000 records
+2025-09-15 20:03:18,841 - INFO - Chunk complete: 30 matches found
+2025-09-15 20:03:18,876 - INFO - Fetching records 23,000 to 24,000
+2025-09-15 20:03:20,238 - INFO - Processing chunk with 1000 records
+2025-09-15 20:07:10,584 - INFO - Chunk complete: 38 matches found
+2025-09-15 20:07:10,584 - INFO - Fetching records 24,000 to 25,000
+2025-09-15 20:07:25,268 - INFO - Processing chunk with 1000 records
+2025-09-15 20:11:39,190 - INFO - Chunk complete: 38 matches found
+2025-09-15 20:11:39,200 - INFO - Fetching records 25,000 to 26,000
+2025-09-15 20:11:40,352 - INFO - Processing chunk with 1000 records
+2025-09-15 20:15:38,787 - INFO - Chunk complete: 35 matches found
+2025-09-15 20:15:38,788 - INFO - Fetching records 26,000 to 27,000
+2025-09-15 20:15:39,886 - INFO - Processing chunk with 1000 records
+2025-09-15 20:21:25,610 - INFO - Chunk complete: 39 matches found
+2025-09-15 20:21:25,618 - INFO - Fetching records 27,000 to 28,000
+2025-09-15 20:21:26,775 - INFO - Processing chunk with 1000 records
+2025-09-15 20:25:56,379 - INFO - Chunk complete: 59 matches found
+2025-09-15 20:25:56,406 - INFO - Fetching records 28,000 to 29,000
+2025-09-15 20:25:57,885 - INFO - Processing chunk with 1000 records
+2025-09-15 20:29:08,733 - INFO - Chunk complete: 44 matches found
+2025-09-15 20:29:08,775 - INFO - Fetching records 29,000 to 30,000
+2025-09-15 20:29:10,096 - INFO - Processing chunk with 1000 records
+2025-09-15 20:34:45,663 - INFO - Chunk complete: 57 matches found
+2025-09-15 20:34:45,683 - INFO - Fetching records 30,000 to 31,000
+2025-09-15 20:34:46,833 - INFO - Processing chunk with 1000 records
+2025-09-15 20:40:08,720 - INFO - Chunk complete: 58 matches found
+2025-09-15 20:40:08,756 - INFO - Fetching records 31,000 to 32,000
+2025-09-15 20:40:10,381 - INFO - Processing chunk with 1000 records
+2025-09-15 20:45:11,341 - INFO - Chunk complete: 32 matches found
+2025-09-15 20:45:11,374 - INFO - Fetching records 32,000 to 33,000
+2025-09-15 20:45:13,182 - INFO - Processing chunk with 1000 records
+2025-09-15 20:51:47,960 - INFO - Chunk complete: 92 matches found
+2025-09-15 20:51:48,003 - INFO - Fetching records 33,000 to 34,000
+2025-09-15 20:51:50,050 - INFO - Processing chunk with 1000 records
+2025-09-15 20:58:44,331 - INFO - Chunk complete: 75 matches found
+2025-09-15 20:58:44,375 - INFO - Fetching records 34,000 to 35,000
+2025-09-15 20:58:46,250 - INFO - Processing chunk with 1000 records
+2025-09-15 21:02:06,010 - INFO - Chunk complete: 23 matches found
+2025-09-15 21:02:06,052 - INFO - Fetching records 35,000 to 36,000
+2025-09-15 21:02:08,193 - INFO - Processing chunk with 1000 records
+2025-09-15 21:05:00,564 - INFO - Chunk complete: 27 matches found
+2025-09-15 21:05:00,604 - INFO - Fetching records 36,000 to 37,000
+2025-09-15 21:05:02,745 - INFO - Processing chunk with 1000 records
+2025-09-15 21:09:19,556 - INFO - Chunk complete: 30 matches found
+2025-09-15 21:09:19,600 - INFO - Fetching records 37,000 to 38,000
+2025-09-15 21:09:22,680 - INFO - Processing chunk with 1000 records
+2025-09-15 21:15:46,637 - INFO - Chunk complete: 49 matches found
+2025-09-15 21:15:46,657 - INFO - Fetching records 38,000 to 39,000
+2025-09-15 21:15:50,079 - INFO - Processing chunk with 1000 records
+2025-09-15 21:20:55,390 - INFO - Chunk complete: 53 matches found
+2025-09-15 21:20:55,391 - INFO - Fetching records 39,000 to 40,000
+2025-09-15 21:20:56,767 - INFO - Processing chunk with 1000 records
+2025-09-15 21:24:12,183 - INFO - Chunk complete: 52 matches found
+2025-09-15 21:24:12,185 - INFO - Fetching records 40,000 to 41,000
+2025-09-15 21:24:13,316 - INFO - Processing chunk with 1000 records
+2025-09-15 21:29:00,786 - INFO - Chunk complete: 73 matches found
+2025-09-15 21:29:00,786 - INFO - Fetching records 41,000 to 42,000
+2025-09-15 21:29:01,971 - INFO - Processing chunk with 1000 records
+2025-09-15 21:33:30,353 - INFO - Chunk complete: 44 matches found
+2025-09-15 21:33:30,360 - INFO - Fetching records 42,000 to 43,000
+2025-09-15 21:33:31,809 - INFO - Processing chunk with 1000 records
+2025-09-15 21:39:20,753 - INFO - Chunk complete: 70 matches found
+2025-09-15 21:39:20,769 - INFO - Fetching records 43,000 to 44,000
+2025-09-15 21:39:23,570 - INFO - Processing chunk with 1000 records
+2025-09-15 21:44:04,164 - INFO - Chunk complete: 39 matches found
+2025-09-15 21:44:04,196 - INFO - Fetching records 44,000 to 45,000
+2025-09-15 21:44:06,169 - INFO - Processing chunk with 1000 records
+2025-09-15 21:50:49,154 - INFO - Chunk complete: 72 matches found
+2025-09-15 21:50:49,185 - INFO - Fetching records 45,000 to 46,000
+2025-09-15 21:50:51,114 - INFO - Processing chunk with 1000 records
+2025-09-15 21:57:33,987 - INFO - Chunk complete: 68 matches found
+2025-09-15 21:57:34,018 - INFO - Fetching records 46,000 to 47,000
+2025-09-15 21:57:35,974 - INFO - Processing chunk with 1000 records
+2025-09-15 22:00:39,468 - INFO - Chunk complete: 18 matches found
+2025-09-15 22:00:39,498 - INFO - Fetching records 47,000 to 48,000
+2025-09-15 22:00:41,509 - INFO - Processing chunk with 1000 records
+2025-09-15 22:03:58,876 - INFO - Chunk complete: 31 matches found
+2025-09-15 22:03:58,885 - INFO - Fetching records 48,000 to 49,000
+2025-09-15 22:04:01,107 - INFO - Processing chunk with 1000 records
+2025-09-15 22:08:36,301 - INFO - Chunk complete: 33 matches found
+2025-09-15 22:08:36,324 - INFO - Fetching records 49,000 to 50,000
+2025-09-15 22:08:37,819 - INFO - Processing chunk with 1000 records
+2025-09-15 22:13:54,077 - INFO - Chunk complete: 42 matches found
+2025-09-15 22:13:54,109 - INFO - Fetching records 50,000 to 51,000
+2025-09-15 22:13:56,164 - INFO - Processing chunk with 1000 records
+2025-09-15 22:19:43,697 - INFO - Chunk complete: 43 matches found
+2025-09-15 22:19:43,704 - INFO - Fetching records 51,000 to 52,000
+2025-09-15 22:19:44,993 - INFO - Processing chunk with 1000 records
+2025-09-15 22:24:57,593 - INFO - Chunk complete: 70 matches found
+2025-09-15 22:24:57,635 - INFO - Fetching records 52,000 to 53,000
+2025-09-15 22:24:59,657 - INFO - Processing chunk with 1000 records
+2025-09-16 07:39:25,447 - INFO - Database initialized at wine_data.db
+2025-09-16 07:39:25,448 - INFO - Running incremental update for last 7 days
+2025-09-16 07:42:08,548 - INFO - Database initialized at wine_data.db
+2025-09-16 07:42:08,549 - INFO - Running incremental update for last 7 days
+2025-09-16 07:44:11,482 - INFO - Database initialized at wine_data.db
+2025-09-16 07:44:11,482 - INFO - Starting full wine matching pipeline
+2025-09-16 07:44:20,096 - INFO - Estimated total records: 307616
+2025-09-16 07:44:20,096 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 07:44:20,096 - INFO - Fetching records 0 to 1,000
+2025-09-16 07:44:20,856 - INFO - Processing chunk with 1000 records
+2025-09-16 07:44:20,962 - ERROR - Pipeline failed: 'item_type'
+2025-09-16 07:47:31,177 - INFO - Database initialized at wine_data.db
+2025-09-16 07:47:31,177 - INFO - Starting full wine matching pipeline
+2025-09-16 07:47:39,730 - INFO - Estimated total records: 307616
+2025-09-16 07:47:39,730 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 07:47:39,730 - INFO - Fetching records 0 to 1,000
+2025-09-16 07:47:40,516 - INFO - Processing chunk with 1000 records
+2025-09-16 07:47:40,521 - ERROR - Error storing sales chunk: table sales_data has no column named DATE
+2025-09-16 07:47:40,522 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-16 07:53:41,599 - INFO - Database initialized at wine_data.db
+2025-09-16 07:53:41,600 - INFO - Starting full wine matching pipeline
+2025-09-16 07:53:50,229 - INFO - Estimated total records: 307616
+2025-09-16 07:53:50,229 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 07:53:50,230 - INFO - Fetching records 0 to 1,000
+2025-09-16 07:53:50,960 - INFO - Processing chunk with 1000 records
+2025-09-16 07:53:50,964 - ERROR - Error storing sales chunk: table sales_data has no column named DATE
+2025-09-16 07:53:50,964 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-16 07:56:45,492 - INFO - Database initialized at wine_data.db
+2025-09-16 07:56:45,493 - INFO - Starting full wine matching pipeline
+2025-09-16 07:56:54,076 - INFO - Estimated total records: 307616
+2025-09-16 07:56:54,076 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 07:56:54,076 - INFO - Fetching records 0 to 1,000
+2025-09-16 07:56:54,770 - INFO - Processing chunk with 1000 records
+2025-09-16 08:10:32,635 - INFO - Starting full wine matching pipeline
+2025-09-16 08:10:41,364 - INFO - Estimated total records: 307616
+2025-09-16 08:10:41,364 - ERROR - Pipeline failed: 'MontgomeryCountyAPI' object has no attribute 'data'
+2025-09-16 08:12:35,628 - INFO - Starting full wine matching pipeline
+2025-09-16 08:12:44,323 - INFO - Estimated total records: 307616
+2025-09-16 08:12:44,323 - ERROR - Pipeline failed: 'MontgomeryCountyAPI' object has no attribute 'data_manager'
+2025-09-16 08:18:13,562 - INFO - Starting full wine matching pipeline
+2025-09-16 08:18:22,339 - INFO - Estimated total records: 307616
+2025-09-16 08:18:22,340 - ERROR - Pipeline failed: no such table: processing_watermarks
+2025-09-16 08:29:33,646 - INFO - Starting full wine matching pipeline
+2025-09-16 08:29:42,266 - INFO - Estimated total records: 307616
+2025-09-16 08:29:42,266 - ERROR - Pipeline failed: no such table: processing_watermarks
+2025-09-16 08:29:42,279 - INFO - Cache saved
+2025-09-16 08:31:08,194 - INFO - Starting full wine matching pipeline
+2025-09-16 08:31:16,921 - INFO - Estimated total records: 307616
+2025-09-16 08:31:16,921 - INFO - Resuming from offest: 65000
+2025-09-16 08:31:16,921 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 08:31:16,922 - INFO - Fetching records 65,000 to 66,000
+2025-09-16 08:31:18,160 - INFO - Processing chunk with 1000 records
+2025-09-16 08:31:18,160 - ERROR - Error storing sales chunk: no such table: sales_data
+2025-09-16 08:31:18,161 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-16 08:31:18,167 - INFO - Cache saved
+2025-09-16 08:32:43,562 - INFO - Starting full wine matching pipeline
+2025-09-16 08:32:52,146 - INFO - Estimated total records: 307616
+2025-09-16 08:32:52,146 - INFO - Resuming from offest: 65000
+2025-09-16 08:32:52,146 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 08:32:52,147 - INFO - Fetching records 65,000 to 66,000
+2025-09-16 08:32:53,428 - INFO - Processing chunk with 1000 records
+2025-09-16 08:32:53,429 - ERROR - Error storing sales chunk: no such table: sales_data
+2025-09-16 08:32:53,429 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-16 08:32:53,435 - INFO - Cache saved
+2025-09-16 08:34:11,088 - INFO - Starting full wine matching pipeline
+2025-09-16 08:34:19,584 - INFO - Estimated total records: 307616
+2025-09-16 08:34:19,584 - ERROR - Pipeline failed: no such table: processing_watermarks
+2025-09-16 08:34:19,596 - INFO - Cache saved
+2025-09-16 08:34:44,269 - INFO - Starting full wine matching pipeline
+2025-09-16 08:34:52,820 - INFO - Estimated total records: 307616
+2025-09-16 08:34:52,820 - INFO - Resuming from offest: 0
+2025-09-16 08:34:52,820 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 08:34:52,820 - INFO - Fetching records 0 to 1,000
+2025-09-16 08:34:53,678 - INFO - Processing chunk with 1000 records
+2025-09-16 08:34:53,679 - ERROR - Error storing sales chunk: no such table: sales_data
+2025-09-16 08:34:53,679 - ERROR - Pipeline failed: Length of values (0) does not match length of index (1000)
+2025-09-16 08:34:53,685 - INFO - Cache saved
+2025-09-16 08:36:41,584 - INFO - Starting full wine matching pipeline
+2025-09-16 08:36:50,362 - INFO - Estimated total records: 307616
+2025-09-16 08:36:50,363 - INFO - Resuming from offest: 0
+2025-09-16 08:36:50,363 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 08:36:50,363 - INFO - Fetching records 0 to 1,000
+2025-09-16 08:36:51,099 - INFO - Processing chunk with 1000 records
+2025-09-16 08:40:03,865 - INFO - Chunk complete: 28 matches found
+2025-09-16 08:40:03,901 - ERROR - Pipeline failed: Cannot operate on a closed database.
+2025-09-16 08:40:03,913 - INFO - Cache saved
+2025-09-16 08:43:51,114 - INFO - Starting full wine matching pipeline
+2025-09-16 08:43:59,777 - INFO - Estimated total records: 307616
+2025-09-16 08:43:59,778 - INFO - Resuming from offest: 1000
+2025-09-16 08:43:59,778 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 08:43:59,778 - INFO - Fetching records 1,000 to 2,000
+2025-09-16 08:44:00,522 - INFO - Processing chunk with 1000 records
+2025-09-16 08:47:49,052 - INFO - Chunk complete: 40 matches found
+2025-09-16 08:47:49,060 - ERROR - Pipeline failed: Cannot operate on a closed database.
+2025-09-16 08:47:49,066 - INFO - Cache saved
+2025-09-16 09:23:52,073 - INFO - Starting full wine matching pipeline
+2025-09-16 09:24:00,445 - INFO - Estimated total records: 307616
+2025-09-16 09:24:00,446 - INFO - Resuming from offest: 2000
+2025-09-16 09:24:00,446 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 09:24:00,446 - INFO - Fetching records 2,000 to 3,000
+2025-09-16 09:24:01,187 - INFO - Processing chunk with 1000 records
+2025-09-16 09:28:17,277 - INFO - Chunk complete: 41 matches found
+2025-09-16 09:28:17,305 - ERROR - Pipeline failed: Cannot operate on a closed database.
+2025-09-16 09:28:17,312 - INFO - Cache saved
+2025-09-16 09:58:17,733 - INFO - Database initialized at wine_data.db
+2025-09-16 09:58:17,733 - INFO - Starting full wine matching pipeline
+2025-09-16 09:58:25,999 - INFO - Estimated total records: 307616
+2025-09-16 09:58:26,000 - INFO - Resuming from offest: 3000
+2025-09-16 09:58:26,000 - INFO - Fetching 307,616 records from Montgomery County API
+2025-09-16 09:58:26,000 - INFO - Fetching records 3,000 to 4,000
+2025-09-16 09:58:26,717 - INFO - Processing chunk with 1000 records
+2025-09-16 10:04:56,312 - INFO - Chunk complete: 56 matches found
+2025-09-16 10:04:56,333 - INFO - Fetching records 4,000 to 5,000
+2025-09-16 10:04:57,609 - INFO - Processing chunk with 1000 records
+2025-09-16 10:09:22,618 - INFO - Chunk complete: 56 matches found
+2025-09-16 10:09:22,661 - INFO - Fetching records 5,000 to 6,000
+2025-09-16 10:09:24,299 - INFO - Processing chunk with 1000 records
+2025-09-16 10:11:45,013 - INFO - Chunk complete: 30 matches found
+2025-09-16 10:11:45,019 - INFO - Fetching records 6,000 to 7,000
+2025-09-16 10:11:45,988 - INFO - Processing chunk with 1000 records
+2025-09-16 10:18:29,459 - INFO - Chunk complete: 90 matches found
+2025-09-16 10:18:29,496 - INFO - Fetching records 7,000 to 8,000
+2025-09-16 10:18:31,016 - INFO - Processing chunk with 1000 records
+2025-09-16 10:23:27,655 - INFO - Intermediate cache saved after 5,000 records
+2025-09-16 10:23:27,667 - INFO - Chunk complete: 49 matches found
+2025-09-16 10:23:27,676 - INFO - Fetching records 8,000 to 9,000
+2025-09-16 10:23:28,577 - INFO - Processing chunk with 1000 records
+2025-09-16 10:29:31,647 - INFO - Chunk complete: 57 matches found
+2025-09-16 10:29:31,686 - INFO - Fetching records 9,000 to 10,000
+2025-09-16 10:29:33,398 - INFO - Processing chunk with 1000 records
+2025-09-16 10:34:16,451 - INFO - Chunk complete: 42 matches found
+2025-09-16 10:34:16,494 - INFO - Fetching records 10,000 to 11,000
+2025-09-16 10:34:18,226 - INFO - Processing chunk with 1000 records
+2025-09-16 10:41:27,465 - INFO - Cache saved
+2025-09-16 11:51:24,945 - INFO - Database initialized at wine_data.db
+2025-09-16 11:51:24,945 - INFO - Starting full wine matching pipeline
+2025-09-16 11:51:25,967 - ERROR - Pipeline failed: a coroutine was expected, got <async_generator object MontgomeryCountyAPI._fetch_all_chunks at 0x7f57a61f5c10>
+2025-09-16 11:51:25,974 - INFO - Cache saved
+2025-09-16 12:17:17,677 - INFO - Database initialized at wine_data.db
+2025-09-16 12:17:17,678 - INFO - Starting full wine matching pipeline
+2025-09-16 12:17:18,668 - ERROR - Pipeline failed: 'NoneType' object cannot be interpreted as an integer
+2025-09-16 12:17:18,675 - INFO - Cache saved
+2025-09-16 12:18:30,285 - INFO - Database initialized at wine_data.db
+2025-09-16 12:18:30,285 - INFO - Starting full wine matching pipeline
+2025-09-16 12:18:31,673 - INFO - Processing chunk with 1000 records
+2025-09-16 12:18:31,704 - ERROR - Pipeline failed: 'ITEM_TYPE'
+2025-09-16 12:18:31,711 - INFO - Cache saved
+2025-09-16 12:21:05,762 - INFO - Database initialized at wine_data.db
+2025-09-16 12:21:05,762 - INFO - Starting full wine matching pipeline
+2025-09-16 12:21:07,097 - INFO - Processing chunk with 1000 records
+2025-09-16 12:21:09,096 - ERROR - Pipeline failed: name 'review_data' is not defined
+2025-09-16 12:21:09,105 - INFO - Cache saved
+2025-09-16 12:22:39,071 - INFO - Database initialized at wine_data.db
+2025-09-16 12:22:39,072 - INFO - Starting full wine matching pipeline
+2025-09-16 12:22:40,448 - INFO - Processing chunk with 1000 records
+2025-09-16 12:22:42,397 - ERROR - Pipeline failed: name 'review_data' is not defined
+2025-09-16 12:22:42,407 - INFO - Cache saved
+2025-09-16 12:25:01,661 - INFO - Database initialized at wine_data.db
+2025-09-16 12:25:01,664 - INFO - Starting full wine matching pipeline
+2025-09-16 12:25:03,891 - INFO - Processing chunk with 1000 records
+2025-09-16 12:28:15,871 - INFO - Chunk complete: 30 matches found
+2025-09-16 12:28:16,231 - INFO - Processing chunk with 1000 records
+2025-09-16 12:32:10,459 - INFO - Chunk complete: 39 matches found
+2025-09-16 12:32:10,652 - INFO - Processing chunk with 1000 records
+2025-09-16 12:36:30,033 - INFO - Chunk complete: 45 matches found
+2025-09-16 12:36:30,184 - INFO - Processing chunk with 1000 records
+2025-09-16 12:42:56,673 - INFO - Chunk complete: 56 matches found
+2025-09-16 12:42:56,707 - INFO - Processing chunk with 1000 records
+2025-09-16 12:47:23,139 - ERROR - Pipeline failed: 'OptimizedWineMatcher' object has no attribute 'save_cache'
+2025-09-16 12:47:23,161 - ERROR - Failed to save cache: 'OptimizedWineMatcher' object has no attribute 'save_cache'
+2025-09-16 13:14:25,236 - INFO - Database initialized at wine_data.db
+2025-09-16 13:14:25,236 - INFO - Starting full wine matching pipeline
+2025-09-16 13:14:26,621 - INFO - Processing chunk with 1000 records
+2025-09-16 13:17:37,818 - INFO - Chunk complete: 28 matches found
+2025-09-16 13:17:37,845 - INFO - Processing chunk with 1000 records
+2025-09-16 13:21:28,726 - INFO - Chunk complete: 41 matches found
+2025-09-16 13:21:28,870 - INFO - Processing chunk with 1000 records
+2025-09-16 13:25:45,989 - INFO - Chunk complete: 43 matches found
+2025-09-16 13:25:46,054 - INFO - Processing chunk with 1000 records
+2025-09-16 13:32:10,347 - INFO - Chunk complete: 56 matches found
+2025-09-16 13:32:10,491 - INFO - Processing chunk with 1000 records
+2025-09-16 13:36:35,504 - INFO - Saved 220 cached matches
+2025-09-16 13:36:35,505 - INFO - Intermediate cache saved after 5,000 records
+2025-09-16 13:36:35,505 - INFO - Chunk complete: 56 matches found
+2025-09-16 13:36:36,757 - INFO - Processing chunk with 1000 records
+2025-09-16 13:38:58,452 - INFO - Chunk complete: 31 matches found
+2025-09-16 13:38:58,662 - INFO - Processing chunk with 1000 records
+2025-09-16 13:45:46,324 - INFO - Chunk complete: 88 matches found
+2025-09-16 13:45:46,412 - INFO - Processing chunk with 1000 records
+2025-09-16 13:50:39,094 - INFO - Chunk complete: 51 matches found
+2025-09-16 13:50:39,162 - INFO - Processing chunk with 1000 records
+2025-09-16 13:56:39,546 - INFO - Chunk complete: 58 matches found
+2025-09-16 13:56:39,579 - INFO - Processing chunk with 1000 records
+2025-09-16 14:01:23,286 - INFO - Saved 475 cached matches
+2025-09-16 14:01:23,296 - INFO - Intermediate cache saved after 10,000 records
+2025-09-16 14:01:23,296 - INFO - Chunk complete: 42 matches found
+2025-09-16 14:01:24,325 - INFO - Processing chunk with 1000 records
+2025-09-16 14:08:45,513 - INFO - Chunk complete: 109 matches found
+2025-09-16 14:08:45,775 - INFO - Processing chunk with 1000 records
+2025-09-16 14:12:37,293 - INFO - Chunk complete: 24 matches found
+2025-09-16 14:12:37,557 - INFO - Processing chunk with 1000 records
+2025-09-16 14:15:47,240 - INFO - Chunk complete: 29 matches found
+2025-09-16 14:15:47,459 - INFO - Processing chunk with 1000 records
+2025-09-16 14:20:24,823 - INFO - Chunk complete: 32 matches found
+2025-09-16 14:20:25,026 - INFO - Processing chunk with 1000 records
+2025-09-16 14:25:59,815 - INFO - Saved 614 cached matches
+2025-09-16 14:25:59,825 - INFO - Intermediate cache saved after 15,000 records
+2025-09-16 14:25:59,825 - INFO - Chunk complete: 45 matches found
+2025-09-16 14:26:02,653 - INFO - Processing chunk with 1000 records
+2025-09-16 14:31:36,433 - INFO - Chunk complete: 54 matches found
+2025-09-16 14:31:36,639 - INFO - Processing chunk with 1000 records
+2025-09-16 14:34:54,468 - INFO - Chunk complete: 39 matches found
+2025-09-16 14:34:54,735 - INFO - Processing chunk with 1000 records
+2025-09-16 14:40:07,013 - INFO - Chunk complete: 81 matches found
+2025-09-16 14:40:07,141 - INFO - Processing chunk with 1000 records
+2025-09-16 14:44:57,166 - INFO - Chunk complete: 53 matches found
+2025-09-16 14:44:57,217 - INFO - Processing chunk with 1000 records
+2025-09-16 14:50:23,106 - INFO - Saved 693 cached matches
+2025-09-16 14:50:23,118 - INFO - Intermediate cache saved after 20,000 records
+2025-09-16 14:50:23,119 - INFO - Chunk complete: 60 matches found
+2025-09-16 14:50:24,649 - INFO - Processing chunk with 1000 records
+2025-09-16 14:55:21,622 - INFO - Chunk complete: 41 matches found
+2025-09-16 14:55:22,013 - INFO - Processing chunk with 1000 records
+2025-09-16 15:02:32,637 - INFO - Chunk complete: 106 matches found
+2025-09-16 15:02:32,851 - INFO - Processing chunk with 1000 records
+2025-09-16 15:06:59,148 - INFO - Chunk complete: 30 matches found
+2025-09-16 15:06:59,396 - INFO - Processing chunk with 1000 records
+2025-09-16 15:10:49,912 - INFO - Chunk complete: 38 matches found
+2025-09-16 15:10:49,988 - INFO - Processing chunk with 1000 records
+2025-09-16 15:15:07,495 - INFO - Saved 764 cached matches
+2025-09-16 15:15:07,532 - INFO - Intermediate cache saved after 25,000 records
+2025-09-16 15:15:07,532 - INFO - Chunk complete: 38 matches found
+2025-09-16 15:15:12,353 - INFO - Processing chunk with 1000 records
+2025-09-16 17:04:45,999 - INFO - Database initialized at wine_data.db
+2025-09-16 17:04:46,002 - INFO - Loaded 764 cached matches
+2025-09-16 17:04:46,002 - INFO - Starting full wine matching pipeline
+2025-09-16 17:04:47,450 - INFO - Processing chunk with 1000 records
+2025-09-16 17:07:59,989 - INFO - Chunk complete: 29 matches found
+2025-09-16 17:08:00,036 - INFO - Processing chunk with 1000 records
+2025-09-16 17:11:33,098 - INFO - Saved 764 cached matches
+2025-09-16 17:11:33,113 - INFO - Cache saved
+2025-09-16 17:11:42,494 - INFO - Database initialized at wine_data.db
+2025-09-16 17:11:42,495 - INFO - Loaded 764 cached matches
+2025-09-16 17:11:42,495 - INFO - Running incremental update for last 7 days
+2025-09-16 17:11:46,442 - INFO - Incremental update complete: 0 new matches
+2025-09-16 17:17:33,176 - INFO - Database initialized at wine_data.db
+2025-09-16 17:17:33,179 - INFO - Loaded 764 cached matches
+2025-09-16 17:17:33,179 - INFO - Running incremental update for last 7 days
+2025-09-16 17:17:37,845 - INFO - Incremental update complete: 0 new matches
+2025-09-16 17:29:15,204 - INFO - Database initialized at wine_data.db
+2025-09-16 17:29:15,206 - INFO - Loaded 764 cached matches
+2025-09-16 17:29:18,903 - INFO - Incremental update complete: 0 new matches, checkpoint updated to ID 46998
+2025-09-16 17:32:38,210 - INFO - Database initialized at wine_data.db
+2025-09-16 17:32:38,213 - INFO - Loaded 764 cached matches
+2025-09-16 17:42:57,562 - INFO - Saved 764 cached matches
+2025-09-16 17:42:57,608 - INFO - Full update complete: 2000 records processed, 69 matches found
+2025-09-16 17:45:23,818 - INFO - Database initialized at wine_data.db
+2025-09-16 17:45:23,819 - INFO - Loaded 764 cached matches
+2025-09-16 17:45:31,562 - INFO - Database initialized at wine_data.db
+2025-09-16 17:45:31,564 - INFO - Loaded 764 cached matches
+2025-09-16 17:46:09,441 - INFO - Saved 764 cached matches
+2025-09-16 17:46:09,463 - INFO - Full update complete: 0 records processed, 0 matches found
+2025-09-16 18:04:00,907 - INFO - Database initialized at wine_data.db
+2025-09-16 18:04:00,911 - INFO - Loaded 764 cached matches
+2025-09-16 18:04:00,920 - INFO - No new sales data to process
+2025-09-16 18:04:33,304 - INFO - Database initialized at wine_data.db
+2025-09-16 18:04:33,306 - INFO - Loaded 764 cached matches
+2025-09-16 18:05:28,773 - INFO - Saved 764 cached matches
+2025-09-16 18:05:28,796 - INFO - Full update complete: 0 records processed, 0 matches found
+2025-09-16 18:06:22,813 - INFO - Database initialized at wine_data.db
+2025-09-16 18:06:22,815 - INFO - Loaded 764 cached matches
+2025-09-16 18:06:25,811 - INFO - Incremental update complete: 0 new matches, checkpoint updated to ID 52000
