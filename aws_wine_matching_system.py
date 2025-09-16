@@ -158,22 +158,22 @@ class MontgomeryCountyAPI:
         return asyncio.run(self._fetch_all_chunks(0, max_records))
 
     def fetch_all_data_streaming(self, max_records):
-    """Synchronous generator that yields DataFrames chunk-by-chunk"""
-    async def wrapper():
-        async for chunk in self._fetch_all_chunks(0, max_records):
-            yield pd.DataFrame(chunk)
-    
-    # Use asyncio to run the async generator and yield each DataFrame
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    agen = wrapper()
+        """Synchronous generator that yields DataFrames chunk-by-chunk"""
+        async def wrapper():
+            async for chunk in self._fetch_all_chunks(0, max_records):
+                yield pd.DataFrame(chunk)
+        
+        # Use asyncio to run the async generator and yield each DataFrame
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        agen = wrapper()
 
-    try:
-        while True:
-            chunk_df = loop.run_until_complete(agen.__anext__())
-            yield chunk_df
-    except StopAsyncIteration:
-        loop.close()
+        try:
+            while True:
+                chunk_df = loop.run_until_complete(agen.__anext__())
+                yield chunk_df
+        except StopAsyncIteration:
+            loop.close()
 
     
     def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
