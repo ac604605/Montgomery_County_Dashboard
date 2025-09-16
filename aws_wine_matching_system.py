@@ -187,14 +187,6 @@ class DataManager:
         self.db_path = db_path
         self.init_database()
 
-    def insert_records(self, conn, rows):
-        cursor = conn.cursor()
-        cursor.executemany(
-            "INSERT INTO matched_results (sales_id, wine_name_extracted, review_match_score, review_title, review_country, review_variety, review_points, review_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [(r['sales_id'], r['wine_name_extracted'], r['review_match_score'], r['review_title'], r['review_country'], r['review_variety'], r['review_points'], r['review_price']) for r in rows]
-        )
-        conn.commit()
-
     def init_database(self):
         """Initialize SQLite database with required tables"""
         with sqlite3.connect(self.db_path) as conn:
@@ -259,19 +251,18 @@ class DataManager:
             conn.commit()
         logger.info(f"Database initialized at {self.db_path}")
 
-    def get_last_watermark(self):
-        """Get the last processed offset for incremental updates"""
-        with sqlite3.connect(self.db_path) as conn:
-            def insert_records(self, conn, rows):
-                cursor = conn.cursor()
-                cursor.executemany(
-                    "INSERT INTO wine_matches (wine_id, match_id, score) VALUES (?, ?, ?)",
-                    rows
-                )
-                conn.commit()
+    def _insert_records(self, conn, rows):
+        """Helper method to insert wine match records"""
+        try:
+            cursor = conn.cursor()
+            cursor.executemany(
+                "INSERT INTO wine_matches (wine_id, match_id, score) VALUES (?, ?, ?)",
+                rows
+            )
+            conn.commit()
         except Exception as e:
-            logger.error(f"Failed to update watermark: {e}")
-            # Don’t raise the exception – watermark updates shouldn’t stop processing
+            logger.error(f"Failed to insert records: {e}")
+            # Don’t raise the exception – insert errors shouldn’t stop processing
 
     def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
         """Store sales data chunk and return list of IDs"""
@@ -311,7 +302,8 @@ class DataManager:
             return
         try:
             with sqlite3.connect(self.db_path) as conn:
-                self.insert_records(conn, matches)
+                df_matches = pd.DataFrame(matches)
+                df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
                 conn.commit()
         except Exception as e:
             logger.error(f"Error storing matches: {e}")
