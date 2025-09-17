@@ -26,7 +26,7 @@ class MontgomeryCountyAPI:
     def get_total_count(self) -> Optional[int]:
         """Get total record count from API"""
         try:
-            print(" Getting total record count...")
+            print("📊 Getting total record count...")
             response = requests.get(
                 self.base_url, 
                 params={'$select': 'count(*)'}, 
@@ -40,16 +40,16 @@ class MontgomeryCountyAPI:
             if data and len(data) > 0 and 'count' in data[0]:
                 total = int(data[0]['count'])
                 self.total_api_records = total
-                print(f" API reports {total:,} total records")
+                print(f"📊 API reports {total:,} total records")
                 
                 if total > self.max_records_per_batch:
                     batches_needed = (total + self.max_records_per_batch - 1) // self.max_records_per_batch
-                    print(f" Will need {batches_needed} batches of {self.max_records_per_batch:,} records each")
+                    print(f"📦 Will need {batches_needed} batches of {self.max_records_per_batch:,} records each")
                 
                 return total
             return None
         except Exception as e:
-            print(f" Error getting count: {e}")
+            print(f"❌ Error getting count: {e}")
             return None
     
     def fetch_chunk(self, offset: int, limit: int = 1000, batch_limit: Optional[int] = None) -> List[Dict]:
@@ -68,7 +68,7 @@ class MontgomeryCountyAPI:
         try:
             params = {'$limit': actual_limit, '$offset': offset}
             
-            print(f" Fetching offset {offset:,} (limit {actual_limit})")
+            print(f"📥 Fetching offset {offset:,} (limit {actual_limit})")
             response = requests.get(self.base_url, params=params, timeout=30)
             time.sleep(self.rate_delay)
             
@@ -76,12 +76,12 @@ class MontgomeryCountyAPI:
             data = response.json()
             
             self.records_fetched += len(data)
-            print(f"    Got {len(data)} records (batch total: {self.records_fetched:,})")
+            print(f"   ✅ Got {len(data)} records (batch total: {self.records_fetched:,})")
             
             return data
             
         except Exception as e:
-            print(f" Error fetching offset {offset}: {e}")
+            print(f"❌ Error fetching offset {offset}: {e}")
             return []
     
     def fetch_batch(self, start_offset: int = 0, max_records: Optional[int] = None) -> List[Dict]:
@@ -93,13 +93,13 @@ class MontgomeryCountyAPI:
         offset = start_offset
         chunk_size = 1000  # Max per request
         
-        print(f" Starting batch from offset {start_offset:,} (max {batch_limit:,} records)")
+        print(f"📦 Starting batch from offset {start_offset:,} (max {batch_limit:,} records)")
         
         while self.records_fetched < batch_limit:
             chunk = self.fetch_chunk(offset, chunk_size, batch_limit)
             
             if not chunk:
-                print(" No more data returned")
+                print("📄 No more data returned")
                 break
                 
             all_data.extend(chunk)
@@ -107,14 +107,14 @@ class MontgomeryCountyAPI:
             
             # Progress update every 10 chunks
             if len(all_data) % 10000 == 0:
-                print(f" Batch progress: {len(all_data):,} records collected")
+                print(f"📊 Batch progress: {len(all_data):,} records collected")
             
             # If we got less than requested, we've hit the end
             if len(chunk) < chunk_size:
-                print(" Reached end of dataset")
+                print("📄 Reached end of dataset")
                 break
         
-        print(f" Batch complete: {len(all_data):,} records fetched")
+        print(f"✅ Batch complete: {len(all_data):,} records fetched")
         return all_data
     
     def fetch_all_data_complete(self, max_records: Optional[int] = None) -> List[Dict]:
@@ -123,14 +123,14 @@ class MontgomeryCountyAPI:
             self.get_total_count()
         
         if not self.total_api_records:
-            print(" Could not determine total record count")
+            print("❌ Could not determine total record count")
             return []
         
         # Determine how many records to actually fetch
         target_records = max_records or self.total_api_records
         target_records = min(target_records, self.total_api_records)
         
-        print(f" Target: {target_records:,} of {self.total_api_records:,} total records")
+        print(f"🎯 Target: {target_records:,} of {self.total_api_records:,} total records")
         
         all_data = []
         current_offset = 0
@@ -140,27 +140,27 @@ class MontgomeryCountyAPI:
             remaining_records = target_records - len(all_data)
             batch_size = min(self.max_records_per_batch, remaining_records)
             
-            print(f"\n BATCH {batch_num} (offset {current_offset:,})")
+            print(f"\n🔄 BATCH {batch_num} (offset {current_offset:,})")
             print("-" * 40)
             
             batch_data = self.fetch_batch(current_offset, batch_size)
             
             if not batch_data:
-                print(f"️  No data returned for batch {batch_num}, stopping")
+                print(f"⚠️  No data returned for batch {batch_num}, stopping")
                 break
             
             all_data.extend(batch_data)
             current_offset += len(batch_data)
             batch_num += 1
             
-            print(f" Total progress: {len(all_data):,} / {target_records:,} records")
+            print(f"📊 Total progress: {len(all_data):,} / {target_records:,} records")
             
             # If we got less than the batch size, we've hit the end
             if len(batch_data) < batch_size:
-                print(" Reached end of available data")
+                print("📄 Reached end of available data")
                 break
         
-        print(f"\n COMPLETE: Fetched {len(all_data):,} records total")
+        print(f"\n🎉 COMPLETE: Fetched {len(all_data):,} records total")
         return all_data
 
 class DatabaseManager:
@@ -220,14 +220,14 @@ class DatabaseManager:
             ''')
             
             conn.commit()
-        print(" Database initialized")
+        print("✅ Database initialized")
     
     def clean_and_prepare_data(self, raw_data: List[Dict]) -> pd.DataFrame:
         """Clean raw API data and prepare for storage"""
         if not raw_data:
             return pd.DataFrame()
             
-        print(f" Cleaning {len(raw_data):,} records...")
+        print(f"🧹 Cleaning {len(raw_data):,} records...")
         
         # Convert to DataFrame
         df = pd.DataFrame(raw_data)
@@ -244,7 +244,7 @@ class DatabaseManager:
         # Generate hash for deduplication
         df['data_hash'] = df.apply(self._generate_hash, axis=1)
         
-        print(f" Data cleaned, {len(df)} records ready")
+        print(f"✅ Data cleaned, {len(df)} records ready")
         return df
     
     def _generate_hash(self, row) -> str:
@@ -261,7 +261,7 @@ class DatabaseManager:
         total_processed = len(df)
         new_records = 0
         
-        print(f" Storing {total_processed:,} records...")
+        print(f"💾 Storing {total_processed:,} records...")
         
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -284,10 +284,10 @@ class DatabaseManager:
                 conn.commit()
                 
         except Exception as e:
-            print(f" Error storing data: {e}")
+            print(f"❌ Error storing data: {e}")
             raise
             
-        print(f" Storage complete: {new_records:,} new records added")
+        print(f"✅ Storage complete: {new_records:,} new records added")
         return total_processed, new_records
     
     def is_complete_ingestion_done(self) -> bool:
@@ -331,6 +331,8 @@ class DatabaseManager:
                     VALUES (?, ?, ?, FALSE)
                 """, (total_api_records, records_ingested, last_offset))
             conn.commit()
+    
+    def get_database_stats(self) -> Dict:
         """Get current database statistics"""
         with sqlite3.connect(self.db_path) as conn:
             stats = {}
@@ -365,9 +367,18 @@ class DatabaseManager:
                 'unique_months': date_info[2]
             }
             
+            # Ingestion progress
+            progress = self.get_ingestion_progress()
+            if progress:
+                stats['ingestion_progress'] = {
+                    'total_api_records': progress[0],
+                    'records_ingested': progress[1],
+                    'completion_percentage': (progress[1] / progress[0] * 100) if progress[0] > 0 else 0
+                }
+            
         return stats
     
-    def get_database_stats(self) -> Dict: 
+    def log_ingestion(self, start_time: datetime, records_fetched: int, 
                      records_stored: int, api_count: int, success: bool, notes: str = ""):
         """Log ingestion metadata"""
         with sqlite3.connect(self.db_path) as conn:
@@ -383,7 +394,7 @@ def run_ingestion(mode: str = "full", max_records: Optional[int] = None):
     
     api_url = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
     
-    print(" MONTGOMERY COUNTY WINE DATA INGESTION")
+    print("🍷 MONTGOMERY COUNTY WINE DATA INGESTION")
     print("="*50)
     
     start_time = datetime.now()
@@ -397,31 +408,26 @@ def run_ingestion(mode: str = "full", max_records: Optional[int] = None):
         # Set limits based on mode
         if mode == "test":
             max_records = max_records or 1000
-            print(f" TEST MODE: Limited to {max_records:,} records")
+            print(f"🧪 TEST MODE: Limited to {max_records:,} records")
             raw_data = api.fetch_batch(0, max_records)
         elif mode == "sample":
             max_records = max_records or 10000
-            print(f" SAMPLE MODE: Limited to {max_records:,} records")
+            print(f"📊 SAMPLE MODE: Limited to {max_records:,} records")
             raw_data = api.fetch_batch(0, max_records)
         else:
             # Check if complete ingestion already done
             if db.is_complete_ingestion_done():
-                print(" Complete ingestion already done!")
+                print("✅ Complete ingestion already done!")
                 progress = db.get_ingestion_progress()
                 if progress:
-                    print(f" Database has {progress[1]:,} of {progress[0]:,} API records")
+                    print(f"📊 Database has {progress[1]:,} of {progress[0]:,} API records")
                 return
             
-            print(f" FULL MODE: Fetching ALL {api_total_count:,} records")
+            print(f"🚀 FULL MODE: Fetching ALL {api_total_count:,} records")
             raw_data = api.fetch_all_data_complete()
         
-        # Fetch data
         if not raw_data:
-            print(" No data fetched")
-            return
-        
-        if not raw_data:
-            print(" No data fetched")
+            print("❌ No data fetched")
             return
         
         # Process and store data
@@ -447,26 +453,26 @@ def run_ingestion(mode: str = "full", max_records: Optional[int] = None):
         # Final report
         duration = datetime.now() - start_time
         print("\n" + "="*50)
-        print(" INGESTION COMPLETE")
+        print("📊 INGESTION COMPLETE")
         print("-"*50)
-        print(f"️  Duration: {duration}")
-        print(f" Records Fetched: {len(raw_data):,}")
-        print(f" Records Processed: {processed:,}")
-        print(f" New Records Added: {new_records:,}")
-        print(f" Total DB Records: {stats['total_records']:,}")
-        print(f" Wine Records: {stats['wine_records']:,}")
+        print(f"⏱️  Duration: {duration}")
+        print(f"📥 Records Fetched: {len(raw_data):,}")
+        print(f"💾 Records Processed: {processed:,}")
+        print(f"✨ New Records Added: {new_records:,}")
+        print(f"🏪 Total DB Records: {stats['total_records']:,}")
+        print(f"🍷 Wine Records: {stats['wine_records']:,}")
         
         if stats['item_types']:
-            print(f"\n Item Types:")
+            print(f"\n📋 Item Types:")
             for item_type, count in stats['item_types'].items():
                 percentage = (count / stats['total_records'] * 100) if stats['total_records'] > 0 else 0
                 print(f"   {item_type:<15} {count:>8,} ({percentage:>5.1f}%)")
         
-        print(f"\n Date Range: {stats['date_range']['min_year']} to {stats['date_range']['max_year']}")
-        print(f" Unique Months: {stats['date_range']['unique_months']}")
+        print(f"\n📅 Date Range: {stats['date_range']['min_year']} to {stats['date_range']['max_year']}")
+        print(f"📅 Unique Months: {stats['date_range']['unique_months']}")
         
     except Exception as e:
-        print(f" Ingestion failed: {e}")
+        print(f"❌ Ingestion failed: {e}")
         db.log_ingestion(start_time, 0, 0, 0, False, str(e))
         raise
 
@@ -477,7 +483,7 @@ if __name__ == "__main__":
         print("Usage:")
         print("  python corrected_montgomery_api.py test      # Test with 1,000 records")
         print("  python corrected_montgomery_api.py sample    # Sample with 10,000 records") 
-        print("  python corrected_montgomery_api.py full      # Full ingestion (up to 50,000)")
+        print("  python corrected_montgomery_api.py full      # Full ingestion (all records)")
         print("  python corrected_montgomery_api.py test 500  # Test with custom limit")
         sys.exit(1)
     
