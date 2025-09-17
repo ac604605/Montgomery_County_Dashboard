@@ -605,3 +605,135 @@
 2025-09-16 18:06:22,813 - INFO - Database initialized at wine_data.db
 2025-09-16 18:06:22,815 - INFO - Loaded 764 cached matches
 2025-09-16 18:06:25,811 - INFO - Incremental update complete: 0 new matches, checkpoint updated to ID 52000
+2025-09-16 18:14:19,019 - INFO - Database initialized at wine_data.db
+2025-09-16 18:14:19,020 - INFO - Loaded 764 cached matches
+2025-09-16 18:14:57,076 - INFO - Saved 764 cached matches
+2025-09-16 18:14:57,118 - INFO - Full update complete: 0 records processed, 0 matches found
+2025-09-16 18:15:21,911 - INFO - Database initialized at wine_data.db
+2025-09-16 18:15:21,913 - INFO - Loaded 764 cached matches
+2025-09-16 18:37:41,711 - INFO - Saved 766 cached matches
+2025-09-16 19:02:57,107 - INFO - Saved 766 cached matches
+2025-09-16 19:27:34,943 - INFO - Saved 766 cached matches
+2025-09-16 19:51:52,980 - INFO - Saved 766 cached matches
+2025-09-16 20:16:29,816 - INFO - Saved 766 cached matches
+2025-09-16 20:39:38,872 - INFO - Saved 804 cached matches
+2025-09-16 21:06:32,547 - INFO - Saved 858 cached matches
+2025-09-16 21:28:38,992 - INFO - Saved 888 cached matches
+2025-09-16 21:55:15,255 - INFO - Saved 945 cached matches
+2025-09-16 22:18:03,210 - INFO - Saved 972 cached matches
+2025-09-16 22:18:03,745 - INFO - Saved 972 cached matches
+2025-09-16 22:18:03,746 - INFO - Full update complete: 29812 records processed, 2470 matches found
+2025-09-17 00:55:21,833 - INFO - Database initialized at wine_data.db
+2025-09-17 00:55:21,837 - INFO - Loaded 972 cached matches
+2025-09-17 00:55:25,680 - INFO - Incremental update complete: 0 new matches, checkpoint updated to ID 29812
+2025-09-17 00:55:40,400 - INFO - Database initialized at wine_data.db
+2025-09-17 00:55:40,404 - INFO - Loaded 972 cached matches
+2025-09-17 00:56:11,279 - INFO - Saved 972 cached matches
+2025-09-17 00:56:11,325 - INFO - Full update complete: 0 records processed, 0 matches found
+2025-09-17 00:56:21,902 - INFO - Database initialized at wine_data.db
+2025-09-17 00:56:21,904 - INFO - Loaded 972 cached matches
+2025-09-17 00:56:38,510 - INFO - Database initialized at wine_data.db
+2025-09-17 00:56:38,512 - INFO - Loaded 972 cached matches
+2025-09-17 00:57:00,876 - INFO - Database initialized at wine_data.db
+2025-09-17 00:57:00,878 - INFO - Loaded 972 cached matches
+2025-09-17 00:57:38,129 - INFO - Database initialized at wine_data.db
+2025-09-17 00:57:38,131 - INFO - Loaded 972 cached matches
+2025-09-17 00:57:51,698 - INFO - Database initialized at wine_data.db
+2025-09-17 00:57:51,700 - INFO - Loaded 972 cached matches
+2025-09-17 01:01:36,508 - INFO - Database initialized at wine_data.db
+2025-09-17 01:01:36,510 - INFO - Loaded 972 cached matches
+2025-09-17 01:01:45,270 - INFO - Database initialized at wine_data.db
+2025-09-17 01:01:45,272 - INFO - Loaded 972 cached matches
+2025-09-17 01:04:27,238 - INFO - Database initialized at wine_data.db
+2025-09-17 01:04:27,240 - INFO - Loaded 972 cached matches
+2025-09-17 01:04:56,578 - INFO - Database initialized at wine_data.db
+2025-09-17 01:04:56,580 - INFO - Loaded 972 cached matches
+2025-09-17 01:09:07,152 - INFO - Database initialized at wine_data.db
+2025-09-17 01:09:07,154 - INFO - Loaded 972 cached matches
+2025-09-17 01:09:16,488 - INFO - Database initialized at wine_data.db
+2025-09-17 01:09:16,490 - INFO - Loaded 972 cached matches
+2025-09-17 01:44:23,457 - INFO - Loaded 972 cached matches
+2025-09-17 01:44:23,463 - INFO - Matching tables initialized
+2025-09-17 01:44:24,472 - INFO - Loaded 129,971 wine reviews
+2025-09-17 01:44:24,524 - INFO - Starting matching: 183,760 unmatched wines
+2025-09-17 01:44:24,526 - INFO - Found 100 unmatched wine records
+2025-09-17 01:44:24,527 - INFO - Processing batch 1: 100 wines
+2025-09-17 01:45:16,335 - INFO - Stored 20 matches
+2025-09-17 01:45:16,349 - INFO - Batch 1 complete: 20 matches found
+2025-09-17 01:45:16,349 - INFO - Reached batch limit (1)
+2025-09-17 01:45:16,355 - INFO - Saved 972 cached matches
+2025-09-17 01:45:17,456 - INFO - ============================================================
+2025-09-17 01:45:17,456 - INFO - WINE MATCHING COMPLETE
+2025-09-17 01:45:17,456 - INFO - ============================================================
+2025-09-17 01:45:17,457 - INFO - Duration: 0:00:52.894130
+2025-09-17 01:45:17,458 - INFO - Wines processed: 100
+2025-09-17 01:45:17,458 - INFO - New matches found: 20
+2025-09-17 01:45:17,458 - INFO - Total wines: 183,760
+2025-09-17 01:45:17,458 - INFO - Total matched: 20
+2025-09-17 01:45:17,458 - INFO - Remaining unmatched: 183,740
+2025-09-17 01:45:17,459 - INFO - Match percentage: 0.0%
+2025-09-17 01:45:17,459 - INFO - Average match score: 0.651
+2025-09-17 01:46:28,308 - INFO - Loaded 972 cached matches
+2025-09-17 01:46:28,308 - INFO - Matching tables initialized
+2025-09-17 01:46:29,320 - INFO - Loaded 129,971 wine reviews
+2025-09-17 01:46:29,378 - INFO - Starting matching: 183,740 unmatched wines
+2025-09-17 01:46:29,384 - INFO - Found 1,000 unmatched wine records
+2025-09-17 01:46:29,384 - INFO - Processing batch 1: 1000 wines
+2025-09-17 01:50:39,190 - INFO - Saved 972 cached matches
+2025-09-17 01:51:00,830 - INFO - Loaded 972 cached matches
+2025-09-17 01:51:00,831 - INFO - Matching tables initialized
+2025-09-17 01:51:02,159 - INFO - Loaded 129,971 wine reviews
+2025-09-17 01:51:03,342 - INFO - Starting matching: 183,740 unmatched wines
+2025-09-17 01:51:03,358 - INFO - Found 1,000 unmatched wine records
+2025-09-17 01:51:03,358 - INFO - Processing batch 1: 1000 wines
+2025-09-17 01:59:13,398 - INFO - Stored 103 matches
+2025-09-17 01:59:13,411 - INFO - Batch 1 complete: 103 matches found
+2025-09-17 01:59:13,472 - INFO - Found 1,000 unmatched wine records
+2025-09-17 01:59:13,472 - INFO - Processing batch 2: 1000 wines
+2025-09-17 02:07:26,849 - INFO - Stored 13 matches
+2025-09-17 02:07:26,850 - INFO - Batch 2 complete: 13 matches found
+2025-09-17 02:07:26,868 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:07:26,868 - INFO - Processing batch 3: 1000 wines
+2025-09-17 02:15:37,045 - INFO - Stored 2 matches
+2025-09-17 02:15:37,059 - INFO - Batch 3 complete: 2 matches found
+2025-09-17 02:15:37,090 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:15:37,091 - INFO - Processing batch 4: 1000 wines
+2025-09-17 02:23:47,718 - INFO - Batch 4 complete: 0 matches found
+2025-09-17 02:23:47,844 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:23:47,848 - INFO - Processing batch 5: 1000 wines
+2025-09-17 02:32:00,034 - INFO - Batch 5 complete: 0 matches found
+2025-09-17 02:32:00,125 - INFO - Saved 972 cached matches
+2025-09-17 02:32:00,286 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:32:00,290 - INFO - Processing batch 6: 1000 wines
+2025-09-17 02:40:12,094 - INFO - Batch 6 complete: 0 matches found
+2025-09-17 02:40:12,100 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:40:12,101 - INFO - Processing batch 7: 1000 wines
+2025-09-17 02:48:23,062 - INFO - Batch 7 complete: 0 matches found
+2025-09-17 02:48:23,104 - INFO - Found 1,000 unmatched wine records
+2025-09-17 02:48:23,106 - INFO - Processing batch 8: 1000 wines
+2025-09-17 02:52:39,329 - INFO - Saved 972 cached matches
+2025-09-17 02:54:48,156 - INFO - Loaded 972 cached matches
+2025-09-17 02:54:48,157 - INFO - Matching tables initialized
+2025-09-17 02:54:49,166 - INFO - Loaded 129,971 wine reviews
+2025-09-17 02:54:49,226 - INFO - Enhanced matching starting: 183,622 unmatched wines
+2025-09-17 02:54:49,227 - INFO - Using threshold: 0.6, batch size: 1000
+2025-09-17 02:54:49,230 - INFO - Processing batch 1: 1000 wines
+2025-09-17 02:56:21,387 - INFO - Saved 972 cached matches
+2025-09-17 02:56:38,323 - INFO - Loaded 972 cached matches
+2025-09-17 02:56:38,324 - INFO - Matching tables initialized
+2025-09-17 02:57:40,545 - INFO - Loaded 972 cached matches
+2025-09-17 02:57:40,546 - INFO - Matching tables initialized
+2025-09-17 02:57:41,543 - INFO - Loaded 129,971 wine reviews
+2025-09-17 02:57:41,602 - INFO - Enhanced matching starting: 183,622 unmatched wines
+2025-09-17 02:57:41,602 - INFO - Using threshold: 0.6, batch size: 1000
+2025-09-17 02:57:41,616 - INFO - Processing batch 1: 1000 wines
+2025-09-17 02:59:55,277 - INFO - Saved 972 cached matches
+2025-09-17 02:59:59,389 - INFO - Loaded 972 cached matches
+2025-09-17 02:59:59,397 - INFO - Matching tables initialized
+2025-09-17 03:00:22,693 - INFO - Loaded 972 cached matches
+2025-09-17 03:00:22,693 - INFO - Matching tables initialized
+2025-09-17 03:00:23,692 - INFO - Loaded 129,971 wine reviews
+2025-09-17 03:00:23,751 - INFO - Enhanced matching starting: 183,622 unmatched wines
+2025-09-17 03:00:23,752 - INFO - Using threshold: 0.6, batch size: 1000
+2025-09-17 03:00:23,764 - INFO - Processing batch 1: 1000 wines
+2025-09-17 03:07:23,937 - INFO - Saved 972 cached matches
