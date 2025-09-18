@@ -48,7 +48,7 @@ def load_cached_data(data_dir: Path):
             return None
         
         try:
-            df = pd.read_excel(file_path)
+            df = pd.read_csv(file_path)
             datasets[dataset_name] = df
             print(f" Loaded {dataset_name}: {df.shape[0]:,} rows × {df.shape[1]} cols")
         except Exception as e:
