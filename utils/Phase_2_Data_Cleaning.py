@@ -172,9 +172,6 @@ def main():
     
     return 0
 
-if __name__ == "__main__":
-    exit_code = main()
-    
     # Add this after the cleaning pipeline completes
 print("\n" + "="*60)
 print("PHASE 2B: SUPPLIER ENRICHMENT")
@@ -204,3 +201,6 @@ print(matched_suppliers[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SC
 output_file = processed_dir / 'enhanced_sales_data.csv'
 df_enhanced.to_csv(output_file, index=False)
 print(f"\nEnhanced dataset saved to: {output_file}")
+
+if __name__ == "__main__":
+    exit_code = main()
