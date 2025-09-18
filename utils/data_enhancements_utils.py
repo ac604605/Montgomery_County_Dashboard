@@ -10,6 +10,12 @@ import numpy as np
 from typing import Optional, Dict, List, Union, Tuple, Any
 import warnings
 
+# Add utils directory to Python path for imports
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / 'data'))
+
 # ===============================
 # DATA CLEANING UTILITIES WITH PROGRESS TRACKING
 # ===============================
