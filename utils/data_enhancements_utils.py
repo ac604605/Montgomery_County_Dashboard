@@ -701,11 +701,6 @@ def test_supplier_enrichment():
     
     return result
 
-
-if __name__ == "__main__":
-    print("Supplier Enrichment Function Loaded")
-    print("Run test_supplier_enrichment() to test the function")
-
 # ================================
 # USAGE EXAMPLES AND TESTING
 # ================================
