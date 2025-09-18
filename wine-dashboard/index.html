@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Sales Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header - Clean white like RNDC */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section h1 {
+            color: #8B1538; /* RNDC burgundy */
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-section p {
+            color: #666;
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .header-nav a {
+            color: #8B1538;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .header-nav a:hover {
+            color: #A91B47;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(rgba(139, 21, 56, 0.85), rgba(139, 21, 56, 0.85)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="%23222"/><circle cx="200" cy="200" r="100" fill="%23333" opacity="0.3"/><circle cx="800" cy="150" r="80" fill="%23333" opacity="0.2"/><circle cx="1000" cy="250" r="60" fill="%23333" opacity="0.3"/></svg>');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .hero-content h2 {
+            font-size: 3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-content p {
+            font-size: 1.125rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Search/Filter Section - Burgundy like RNDC */
+        .search-section {
+            background: #8B1538;
+            padding: 2rem;
+            color: white;
+        }
+
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .search-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-field label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .search-field input,
+        .search-field select {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-field input:focus,
+        .search-field select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
+
+        .search-btn {
+            background: #2c5530;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .search-btn:hover {
+            background: #1e3a21;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Status Banner */
+        .status-banner {
+            background: #e8f4fd;
+            border-left: 4px solid #2563eb;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .status-text {
+            color: #1e40af;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Section Cards */
+        .section-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section-header h3 {
+            color: #8B1538;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .section-content {
+            padding: 2rem;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.9;
+            margin-bottom: 0.75rem;
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        /* Metric Color Schemes */
+        .metric-control-state {
+            --card-color: #8B1538;
+            --card-color-dark: #6B1028;
+        }
+
+        .metric-off-premise {
+            --card-color: #D97706;
+            --card-color-dark: #B45309;
+        }
+
+        .metric-transfers {
+            --card-color: #DC2626;
+            --card-color-dark: #B91C1C;
+        }
+
+        .metric-skus {
+            --card-color: #2563EB;
+            --card-color-dark: #1D4ED8;
+        }
+
+        .metric-sparkling {
+            --card-color: #059669;
+            --card-color-dark: #047857;
+        }
+
+        /* Charts */
+        .chart-container {
+            height: 450px;
+            background: white;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+
+        .placeholder-chart {
+            height: 450px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            text-align: center;
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .hero-content h2 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-content h2 {
+                font-size: 1.5rem;
+            }
+
+            .metric-value {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <h1>Wine Market Intelligence</h1>
+                <p>Control State Distribution Analytics</p>
+            </div>
+            <nav class="header-nav">
+                <a href="#dashboard">Dashboard</a>
+                <a href="#analytics">Analytics</a>
+                <a href="#reports">Reports</a>
+                <a href="#data">Data</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h2>Market Intelligence</h2>
+            <p>Comprehensive wine distribution analytics and performance insights for control state markets</p>
+        </div>
+    </section>
+
+    <!-- Search/Filter Section -->
+    <section class="search-section">
+        <div class="search-container">
+            <div class="search-title">Filter Your Data</div>
+            <div class="search-grid">
+                <div class="search-field">
+                    <label for="dataFile">Load Data File</label>
+                    <input type="file" id="dataFile" accept=".json,.csv" style="padding: 0.5rem;">
+                </div>
+                <div class="search-field">
+                    <label for="yearFilter">Year</label>
+                    <select id="yearFilter" multiple>
+                        <option value="">All Years</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="monthFilter">Month</label>
+                    <select id="monthFilter" multiple>
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="varietyFilter">Wine Variety</label>
+                    <select id="varietyFilter" multiple>
+                        <option value="">All Varieties</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="priceMin">Min Price ($)</label>
+                    <input type="number" id="priceMin" value="0" min="0" placeholder="0">
+                </div>
+                <div class="search-field">
+                    <label for="priceMax">Max Price ($)</label>
+                    <input type="number" id="priceMax" value="1000" min="0" placeholder="1000">
+                </div>
+                <div class="search-field">
+                    <button class="search-btn" onclick="applyFilters()">Update Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Status Banner -->
+        <div class="status-banner">
+            <div class="status-text" id="dataStatus">Loading data...</div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3>Key Performance Metrics</h3>
+            </div>
+            <div class="section-content">
+                <div class="metrics-grid">
+                    <div class="metric-card metric-control-state">
+                        <div class="metric-title">Total Wine Value</div>
+                        <div class="metric-value" id="controlStateSales">$0</div>
+                        <div class="metric-subtitle">Sum of Review Prices</div>
+                    </div>
+                    <div class="metric-card metric-off-premise">
+                        <div class="metric-title">Total Points</div>
+                        <div class="metric-value" id="offPremiseSales">0</div>
+                        <div class="metric-subtitle">Sum of Review Scores</div>
+                    </div>
+                    <div class="metric-card metric-transfers">
+                        <div class="metric-title">Match Quality</div>
+                        <div class="metric-value" id="inventoryTransfers">0</div>
+                        <div class="metric-subtitle">Total Match Scores</div>
+                    </div>
+                    <div class="metric-card metric-skus">
+                        <div class="metric-title">Unique Wines</div>
+                        <div class="metric-value" id="activeSkus">0</div>
+                        <div class="metric-subtitle">Distinct Entries</div>
+                    </div>
+                    <div class="metric-card metric-sparkling">
+                        <div class="metric-title">Sparkling Wines</div>
+                        <div class="metric-value" id="sparklingWines">0</div>
+                        <div class="metric-subtitle">Sparkling Category</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Trends Chart -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3>Monthly Sales Trends</h3>
+            </div>
+            <div class="section-content">
+                <div id="salesTrendChart" class="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- Category Analysis Chart -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3>Wine Category Performance</h3>
+            </div>
+            <div class="section-content">
+                <div id="categoryChart" class="chart-container"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global data variables
+        let wineData = [];
+        let filteredData = [];
+
+        // Utility functions
+        function sanitizeNumber(value, defaultValue = 0) {
+            if (value === null || value === undefined || value === '') return defaultValue;
+            const num = parseFloat(value);
+            return isNaN(num) ? defaultValue : num;
+        }
+
+        function sanitizeString(value, defaultValue = '') {
+            if (value === null || value === undefined) return defaultValue;
+            return String(value).trim();
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-US').format(value);
+        }
+
+        // Data processing
+        function processData(rawData) {
+            if (!Array.isArray(rawData)) {
+                console.warn('Data is not an array:', typeof rawData);
+                return [];
+            }
+
+            return rawData
+                .filter(record => record && typeof record === 'object' && (record.sales_id || record.id))
+                .map(record => {
+                    // Extract year/month from match_date if available
+                    let year = new Date().getFullYear();
+                    let month = 1;
+                    if (record.match_date) {
+                        const date = new Date(record.match_date);
+                        year = date.getFullYear();
+                        month = date.getMonth() + 1;
+                    }
+
+                    return {
+                        ...record,
+                        // Map your data fields to expected dashboard fields
+                        RETAIL_SALES: sanitizeNumber(record.review_price || 0), // Using price as proxy for sales
+                        WAREHOUSE_SALES: sanitizeNumber(record.review_points || 0), // Using points as proxy
+                        RETAIL_TRANSFERS: sanitizeNumber(record.review_match_score * 100 || 0), // Match score as transfer metric
+                        review_price: sanitizeNumber(record.review_price),
+                        YEAR: year,
+                        MONTH: month,
+                        ITEM_TYPE: 'Wine',
+                        review_variety: sanitizeString(record.review_variety, 'Unknown'),
+                        review_country: sanitizeString(record.review_country, 'Unknown'),
+                        SUPPLIER: 'Wine Reviews', // Generic since we don't have supplier data
+                        review_winery: sanitizeString(record.wine_name_extracted, 'Unknown'),
+                        'ITEM CODE': sanitizeString(record.sales_id || record.id),
+                        wine_name: sanitizeString(record.wine_name_extracted, 'Unknown')
+                    };
+                });
+        }
+
+        // Filter data
+        function applyFilters() {
+            const yearFilter = Array.from(document.getElementById('yearFilter').selectedOptions).map(o => parseInt(o.value)).filter(v => !isNaN(v));
+            const monthFilter = Array.from(document.getElementById('monthFilter').selectedOptions).map(o => parseInt(o.value)).filter(v => !isNaN(v));
+            const priceMin = parseFloat(document.getElementById('priceMin').value) || 0;
+            const priceMax = parseFloat(document.getElementById('priceMax').value) || 1000;
+            const varietyFilter = Array.from(document.getElementById('varietyFilter').selectedOptions).map(o => o.value).filter(v => v);
+
+            filteredData = wineData.filter(record => {
+                if (yearFilter.length && !yearFilter.includes(record.YEAR)) return false;
+                if (monthFilter.length && !monthFilter.includes(record.MONTH)) return false;
+                if (record.review_price < priceMin || record.review_price > priceMax) return false;
+                if (varietyFilter.length && !varietyFilter.includes(record.review_variety)) return false;
+                return true;
+            });
+
+            updateMetrics();
+            updateCharts();
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const metrics = {
+                controlState: filteredData.reduce((sum, d) => sum + d.review_price, 0), // Total price value
+                offPremise: filteredData.reduce((sum, d) => sum + d.review_points, 0), // Total review points
+                transfers: filteredData.reduce((sum, d) => sum + (d.review_match_score * 100), 0), // Total match scores
+                skus: new Set(filteredData.map(d => d.sales_id || d.id)).size, // Unique sales IDs
+                sparkling: filteredData.filter(d => 
+                    d.review_variety && (
+                        d.review_variety.toLowerCase().includes('sparkling') ||
+                        d.review_variety.toLowerCase().includes('champagne') ||
+                        d.review_variety.toLowerCase().includes('cava') ||
+                        d.review_variety.toLowerCase().includes('prosecco')
+                    )
+                ).length
+            };
+
+            document.getElementById('controlStateSales').textContent = formatCurrency(metrics.controlState);
+            document.getElementById('offPremiseSales').textContent = formatNumber(metrics.offPremise);
+            document.getElementById('inventoryTransfers').textContent = formatNumber(Math.round(metrics.transfers));
+            document.getElementById('activeSkus').textContent = formatNumber(metrics.skus);
+            document.getElementById('sparklingWines').textContent = formatNumber(metrics.sparkling);
+
+            // Update status
+            document.getElementById('dataStatus').textContent = 
+                `Data Status: ${formatNumber(wineData.length)} records loaded • ${formatNumber(filteredData.length)} records displayed`;
+        }
+
+        // Update charts
+        function updateCharts() {
+            // Monthly trend chart based on match_date
+            const monthlyData = {};
+            filteredData.forEach(record => {
+                const key = `${record.YEAR}-${String(record.MONTH).padStart(2, '0')}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = { totalPrice: 0, totalPoints: 0, count: 0 };
+                }
+                monthlyData[key].totalPrice += record.review_price || 0;
+                monthlyData[key].totalPoints += record.review_points || 0;
+                monthlyData[key].count += 1;
+            });
+
+            const sortedKeys = Object.keys(monthlyData).sort();
+            const prices = sortedKeys.map(key => monthlyData[key].totalPrice);
+            const points = sortedKeys.map(key => monthlyData[key].totalPoints);
+
+            Plotly.newPlot('salesTrendChart', [{
+                x: sortedKeys,
+                y: prices,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Total Wine Value ($)',
+                line: { color: '#8B1538', width: 3 },
+                marker: { size: 6, color: '#8B1538' },
+                yaxis: 'y'
+            }, {
+                x: sortedKeys,
+                y: points,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Total Review Points',
+                line: { color: '#D97706', width: 3 },
+                marker: { size: 6, color: '#D97706' },
+                yaxis: 'y2'
+            }], {
+                title: {
+                    text: 'Monthly Wine Reviews Trends',
+                    font: { size: 16, color: '#8B1538' }
+                },
+                xaxis: { 
+                    title: 'Month',
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: { 
+                    title: 'Total Value ($)',
+                    side: 'left',
+                    gridcolor: '#e9ecef'
+                },
+                yaxis2: {
+                    title: 'Total Points',
+                    side: 'right',
+                    overlaying: 'y'
+                },
+                plot_bgcolor: '#ffffff',
+                paper_bgcolor: '#ffffff',
+                margin: { t: 50, r: 60, b: 50, l: 80 }
+            }, { responsive: true });
+
+            // Country breakdown
+            const countryData = {};
+            filteredData.forEach(record => {
+                const country = record.review_country || 'Unknown';
+                if (!countryData[country]) {
+                    countryData[country] = { count: 0, avgPrice: 0, totalPrice: 0 };
+                }
+                countryData[country].count += 1;
+                countryData[country].totalPrice += record.review_price || 0;
+            });
+
+            // Calculate average prices and get top countries
+            Object.keys(countryData).forEach(country => {
+                countryData[country].avgPrice = countryData[country].totalPrice / countryData[country].count;
+            });
+
+            const topCountries = Object.entries(countryData)
+                .sort(([,a], [,b]) => b.count - a.count)
+                .slice(0, 10);
+
+            Plotly.newPlot('categoryChart', [{
+                x: topCountries.map(([country]) => country),
+                y: topCountries.map(([, data]) => data.count),
+                type: 'bar',
+                marker: { 
+                    color: '#8B1538',
+                    line: { color: '#6B1028', width: 1 }
+                }
+            }], {
+                title: {
+                    text: 'Top 10 Countries by Wine Review Count',
+                    font: { size: 16, color: '#8B1538' }
+                },
+                xaxis: { 
+                    title: 'Country',
+                    tickangle: -45,
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: { 
+                    title: 'Number of Reviews',
+                    gridcolor: '#e9ecef'
+                },
+                plot_bgcolor: '#ffffff',
+                paper_bgcolor: '#ffffff',
+                margin: { t: 50, r: 20, b: 120, l: 80 }
+            }, { responsive: true });
+        }
+
+        // Populate filter options
+        function populateFilters() {
+            // Years
+            const years = [...new Set(wineData.map(d => d.YEAR))].sort();
+            const yearSelect = document.getElementById('yearFilter');
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+
+            // Months
+            const months = [...new Set(wineData.map(d => d.MONTH))].sort((a, b) => a - b);
+            const monthSelect = document.getElementById('monthFilter');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = monthNames[month - 1];
+                monthSelect.appendChild(option);
+            });
+
+            // Varieties
+            const varieties = [...new Set(wineData.map(d => d.review_variety))].sort();
+            const varietySelect = document.getElementById('varietyFilter');
+            varieties.forEach(variety => {
+                const option = document.createElement('option');
+                option.value = variety;
+                option.textContent = variety;
+                varietySelect.appendChild(option);
+            });
+        }
+
+        // File upload handler
+        function setupFileUpload() {
+            document.getElementById('dataFile').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        let data;
+                        if (file.name.endsWith('.json')) {
+                            data = JSON.parse(e.target.result);
+                        } else if (file.name.endsWith('.csv')) {
+                            // Simple CSV parser - you might want to use Papa Parse for complex CSVs
+                            const lines = e.target.result.split('\n');
+                            const headers = lines[0].split(',').map(h => h.trim());
+                            data = lines.slice(1)
+                                .filter(line => line.trim())
+                                .map(line => {
+                                    const values = line.split(',');
+                                    const obj = {};
+                                    headers.forEach((header, index) => {
+                                        obj[header] = values[index]?.trim();
+                                    });
+                                    return obj;
+                                });
+                        }
+                        
+                        initializeDashboard(data);
+                        document.getElementById('dataStatus').textContent = 
+                            `File loaded: ${file.name} • ${formatNumber(data.length)} records`;
+                    } catch (error) {
+                        alert('Error loading file: ' + error.message);
+                        console.error('File loading error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // Initialize dashboard
+        function initializeDashboard(data = []) {
+            console.log('Initializing dashboard with', data.length, 'records');
+            
+            wineData = processData(data);
+            filteredData = [...wineData];
+            
+            if (wineData.length > 0) {
+                populateFilters();
+                updateMetrics();
+                updateCharts();
+            } else {
+                // Show placeholder state
+                document.getElementById('salesTrendChart').innerHTML = 
+                    '<div class="placeholder-chart"><div class="placeholder-icon">📊</div><div>No data available<br>Upload wine sales data to view trends</div></div>';
+                document.getElementById('categoryChart').innerHTML = 
+                    '<div class="placeholder-chart"><div class="placeholder-icon">🍷</div><div>No data available<br>Upload wine sales data to view categories</div></div>';
+                
+                document.getElementById('dataStatus').textContent = 'No data loaded • Upload wine sales data to begin analysis';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+            
+            // Try to load from parent directory first
+            fetch('../wine_data.json')  // This goes up one directory to Montgomery_County_Dashboard/
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Data file not found at ../wine_data.json');
+                })
+                .then(data => {
+                    initializeDashboard(data);
+                    document.getElementById('dataStatus').textContent = 
+                        `Data loaded: wine_data.json • ${formatNumber(data.length)} records`;
+                })
+                .catch(error => {
+                    console.log('No data file found, waiting for upload:', error.message);
+                    document.getElementById('dataStatus').textContent = 
+                        'No data file found • Use file upload or place wine_data.json in parent directory';
+                    initializeDashboard([]);
+                });
+        });
+
+        // Expose function globally for testing
+        window.loadWineData = initializeDashboard;
+    </script>
+</body>
+</html>
