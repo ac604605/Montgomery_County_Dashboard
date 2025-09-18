@@ -10,10 +10,10 @@ import sys
 from pathlib import Path
 import os
 
-# Add src directory to Python path for imports
+# Add utils directory to Python path for imports
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
-sys.path.append(str(project_root / 'src'))
+sys.path.append(str(project_root / 'utils'))
 
 # Import the data enhancement utilities
 try:
@@ -21,7 +21,7 @@ try:
     print("✓ Successfully imported data_enhancement_utils")
 except ImportError as e:
     print(f"❌ Error importing data_enhancement_utils: {e}")
-    print(f"Make sure data_enhancement_utils.py is in the src/ directory")
+    print(f"Make sure data_enhancement_utils.py is in the utils/ directory")
     sys.exit(1)
 
 def load_cached_data(data_dir: Path):
