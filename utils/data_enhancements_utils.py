@@ -536,6 +536,175 @@ def run_complete_item_code_standardization(df: pd.DataFrame,
         report['error'] = error_msg
         return df, report
 
+def run_supplier_enrichment(sales_df: pd.DataFrame, 
+                           suppliers_df: pd.DataFrame, 
+                           test_mode: bool = False,
+                           match_threshold: float = 0.8,
+                           verbose: bool = True) -> pd.DataFrame:
+    """
+    Enrich sales data with supplier information using fuzzy matching.
+    
+    Matches SUPPLIER column from sales data to Trade Name in suppliers data,
+    then adds Report Type information for better brand ownership classification.
+    
+    Args:
+        sales_df (pd.DataFrame): Sales data with SUPPLIER column
+        suppliers_df (pd.DataFrame): Suppliers data with Trade Name and Report Type
+        test_mode (bool): If True, only process first 1000 rows for testing
+        match_threshold (float): Minimum similarity score for matches (0.0-1.0)
+        verbose (bool): Whether to show progress
+        
+    Returns:
+        pd.DataFrame: Sales data enriched with supplier information
+    """
+    from difflib import SequenceMatcher
+    
+    if verbose:
+        print("="*60)
+        print("SUPPLIER ENRICHMENT - FUZZY MATCHING")
+        print("="*60)
+    
+    # Create copy of sales data
+    enriched_df = sales_df.copy()
+    
+    if test_mode:
+        enriched_df = enriched_df.head(1000)
+        if verbose:
+            print(f"TEST MODE: Processing only {len(enriched_df)} rows")
+    
+    # Prepare supplier lookup data
+    suppliers_lookup = suppliers_df.copy()
+    suppliers_lookup['Trade Name'] = suppliers_lookup['Trade Name'].astype(str).str.strip().str.upper()
+    suppliers_lookup = suppliers_lookup.dropna(subset=['Trade Name'])
+    
+    if verbose:
+        print(f"Sales data: {len(enriched_df):,} rows")
+        print(f"Suppliers data: {len(suppliers_lookup):,} entries")
+        print(f"Unique suppliers in sales: {enriched_df['SUPPLIER'].nunique():,}")
+    
+    # Initialize new columns
+    enriched_df['MATCHED_SUPPLIER_NAME'] = ''
+    enriched_df['SUPPLIER_MATCH_SCORE'] = 0.0
+    enriched_df['SUPPLIER_REPORT_TYPE'] = ''
+    enriched_df['SUPPLIER_LICENSE_ID'] = ''
+    
+    # Get unique suppliers to avoid redundant matching
+    unique_suppliers = enriched_df['SUPPLIER'].dropna().unique()
+    supplier_matches = {}
+    
+    if verbose:
+        print(f"\nMatching {len(unique_suppliers):,} unique suppliers...")
+    
+    # Process each unique supplier
+    for i, supplier in enumerate(unique_suppliers):
+        if pd.isna(supplier) or supplier == '':
+            continue
+            
+        supplier_clean = str(supplier).strip().upper()
+        best_match = None
+        best_score = 0.0
+        
+        # Compare against all trade names
+        for _, supplier_row in suppliers_lookup.iterrows():
+            trade_name = supplier_row['Trade Name']
+            
+            # Calculate similarity score
+            score = SequenceMatcher(None, supplier_clean, trade_name).ratio()
+            
+            if score > best_score:
+                best_score = score
+                best_match = supplier_row
+        
+        # Store the best match if it meets threshold
+        if best_match is not None and best_score >= match_threshold:
+            supplier_matches[supplier] = {
+                'matched_name': best_match['Trade Name'],
+                'score': best_score,
+                'report_type': best_match['Report Type'],
+                'license_id': best_match['License_ID']
+            }
+        
+        # Progress indicator
+        if verbose and (i + 1) % 100 == 0:
+            matched_so_far = len([m for m in supplier_matches.values() if m['score'] >= match_threshold])
+            print(f"Processed {i + 1:,}/{len(unique_suppliers):,} suppliers, {matched_so_far} matches found")
+    
+    # Apply matches to the dataframe
+    if verbose:
+        print(f"\nApplying matches to dataset...")
+    
+    for supplier, match_info in supplier_matches.items():
+        mask = enriched_df['SUPPLIER'] == supplier
+        enriched_df.loc[mask, 'MATCHED_SUPPLIER_NAME'] = match_info['matched_name']
+        enriched_df.loc[mask, 'SUPPLIER_MATCH_SCORE'] = match_info['score']
+        enriched_df.loc[mask, 'SUPPLIER_REPORT_TYPE'] = match_info['report_type']
+        enriched_df.loc[mask, 'SUPPLIER_LICENSE_ID'] = match_info['license_id']
+    
+    # Results summary
+    total_matches = len(supplier_matches)
+    high_confidence_matches = len([m for m in supplier_matches.values() if m['score'] >= 0.8])
+    
+    if verbose:
+        print(f"\nENRICHMENT COMPLETE:")
+        print(f"✓ Total supplier matches found: {total_matches}")
+        print(f"✓ High confidence matches (≥0.8): {high_confidence_matches}")
+        print(f"✓ Match rate: {(total_matches/len(unique_suppliers)*100):.1f}%")
+        
+        # Show report type distribution
+        if high_confidence_matches > 0:
+            print(f"\nReport Type Distribution (high confidence matches):")
+            high_conf_mask = enriched_df['SUPPLIER_MATCH_SCORE'] >= 0.8
+            report_types = enriched_df[high_conf_mask]['SUPPLIER_REPORT_TYPE'].value_counts()
+            for report_type, count in report_types.items():
+                print(f"  {report_type}: {count:,}")
+    
+    return enriched_df
+
+
+# Example usage and testing
+def test_supplier_enrichment():
+    """Test function to verify supplier enrichment works"""
+    
+    # Sample sales data
+    sales_sample = pd.DataFrame({
+        'SUPPLIER': [
+            'REPUBLIC NATIONAL DISTRIBUTING CO',
+            'PWSWN INC', 
+            'RELIABLE CHURCHILL LLLP',
+            'LANTERNA DISTRIBUTORS INC',
+            'KYSELA PERE ET FILS LTD'
+        ],
+        'ITEM_CODE': [100009, 100024, 1001, 100145, 100641],
+        'ITEM_TYPE': ['WINE', 'WINE', 'BEER', 'WINE', 'WINE']
+    })
+    
+    # Sample suppliers data  
+    suppliers_sample = pd.DataFrame({
+        'License_ID': ['085631', '123456', '789012'],
+        'Trade Name': [
+            'REPUBLIC NATIONAL DISTRIBUTING CO LLC',
+            'PWSWN INCORPORATED', 
+            'KYSELA PERE ET FILS LTD'
+        ],
+        'Report Type': [
+            'Virginia Importers and Breweries',
+            'Wholesale Wine Distributors',
+            'Wholesale Wine Distributors'
+        ]
+    })
+    
+    # Run enrichment
+    result = run_supplier_enrichment(sales_sample, suppliers_sample, test_mode=True)
+    
+    print(f"\nTEST RESULTS:")
+    print(result[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE', 'SUPPLIER_REPORT_TYPE']].head())
+    
+    return result
+
+
+if __name__ == "__main__":
+    print("Supplier Enrichment Function Loaded")
+    print("Run test_supplier_enrichment() to test the function")
 
 # ================================
 # USAGE EXAMPLES AND TESTING
