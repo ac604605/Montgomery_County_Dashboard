@@ -4,7 +4,7 @@ Phase 2: Data Cleaning, Standardization, and Supplier Enrichment
 Loads cached GitHub data, runs cleaning pipeline, enriches supplier info, saves results
 Works in both EC2 and Docker environments
 """
-
+from utils import data_enhancement_utils
 import pandas as pd
 import sys
 from pathlib import Path
