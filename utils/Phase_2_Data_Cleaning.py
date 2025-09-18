@@ -9,6 +9,13 @@ import pandas as pd
 import sys
 from pathlib import Path
 import os
+import data_enhancement_utils as deu
+
+print("✓ Successfully imported data_enhancement_utils")
+
+# Debug: List all available functions in the module
+print("Available functions in deu module:")
+print([attr for attr in dir(deu) if not attr.startswith('_')])
 
 # Add utils directory to Python path for imports
 project_root = Path(__file__).parent.parent
