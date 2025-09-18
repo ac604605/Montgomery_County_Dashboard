@@ -1,611 +1,275 @@
-"""
-Enhanced Wine Review Matching System - AWS EC2 Optimized
-File: aws_wine_matching_system.py
+#!/bin/bash
+# setup_ec2_wine_matcher.sh - Initial setup for Montgomery County Pipeline
+# Gets you to the GitHub data loading checkpoint
 
-Optimized for cloud deployment with:
-- API data fetching with pagination
-- Chunked processing for memory efficiency  
-- Automated scheduling capabilities
-- Database persistence
-- Parallel processing options
+set -e
+
+echo " Montgomery County Wine Matcher - Initial Setup"
+echo "================================================="
+
+# Detect environment
+if [ -f /.dockerenv ]; then
+    ENVIRONMENT="docker"
+    USER_HOME="/app"
+    echo " Docker container environment detected"
+else
+    ENVIRONMENT="ec2"
+    USER_HOME="/home/ec2-user"
+    echo "️  EC2 native environment detected"
+fi
+
+PROJECT_DIR="$USER_HOME/montgomery_wine_pipeline"
+
+# EC2-specific setup
+setup_ec2() {
+    echo " Setting up EC2 environment..."
+    
+    # Update system
+    echo "Updating system packages..."
+    sudo dnf update -y
+    
+    # Install Python 3.11 and development tools
+    echo "Installing Python 3.11 and tools..."
+    sudo dnf install -y python3.11 python3.11-pip python3.11-venv git htop sqlite wget curl
+    
+    # Create project directory
+    echo "Creating project directory: $PROJECT_DIR"
+    mkdir -p $PROJECT_DIR
+    cd $PROJECT_DIR
+    
+    # Create virtual environment
+    echo "Creating Python virtual environment..."
+    python3.11 -m venv venv
+    source venv/bin/activate
+    
+    # Install required packages for initial data loading
+    echo "Installing Python packages..."
+    pip install --upgrade pip
+    pip install pandas requests psutil numpy
+    
+    echo " EC2 environment ready"
+}
+
+# Docker-specific setup (simplified for now)
+setup_docker() {
+    echo " Setting up Docker environment..."
+    cd $PROJECT_DIR
+    pip install pandas requests psutil numpy
+    echo " Docker environment ready"
+}
+
+# Create basic project structure
+create_project_structure() {
+    echo " Creating project structure..."
+    mkdir -p {data/{raw,processed,logs},scripts,src}
+    
+    # Create the initial data loader script
+    cat > scripts/load_github_data.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Initial GitHub Data Loader - Phase 1
+Gets you to the checkpoint with all datasets loaded and summarized
 """
 
 import pandas as pd
-import numpy as np
 import requests
-import time
-import sqlite3
-import pickle
 import os
-from datetime import datetime, timedelta
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple, Generator
-import logging
-from dataclasses import dataclass
-import hashlib
-import json
-import re
-from difflib import SequenceMatcher
+from pathlib import Path
+import gc
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('wine_matching.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class APIConfig:
-    """Configuration for Montgomery County API"""
-    base_url: str = "https://data.montgomerycountymd.gov/resource/v76h-r7br.json"
-    app_token: str = None  # Add your app token here for higher rate limits
-    max_limit: int = 50000  # SODA 2.1 endpoint limit
-    chunk_size: int = 10000  # Optimal chunk size for processing
-    rate_limit_delay: float = 0.1  # Delay between API calls
-
-
-@dataclass 
-class ProcessingConfig:
-    """Configuration for processing parameters"""
-    matching_threshold: float = 0.6
-    enable_parallel: bool = True
-    max_workers: int = 4
-    cache_enabled: bool = True
-    database_path: str = "wine_data.db"
-    backup_enabled: bool = True
-
-
-class MontgomeryCountyAPI:
-    """Handle API calls to Montgomery County alcohol sales data"""
+def main():
+    # GitHub raw URL
+    base_url = "https://raw.githubusercontent.com/ac604605/Montgomery_County_Dashboard/main/"
     
-    def __init__(self, config: APIConfig):
-        self.config = config
-        self.session = requests.Session()
-        if config.app_token:
-            self.session.headers.update({'X-App-Token': config.app_token})
+    print("Loading datasets from GitHub repository...")
+    print("=" * 60)
     
-    def get_total_records(self) -> int:
-        """Get total number of records available"""
-        try:
-            # Use $select=count(*) to get total count efficiently
-            url = f"{self.config.base_url}?$select=count(*)"
-            response = self.session.get(url)
-            response.raise_for_status()
-            
-            data = response.json()
-            return int(data[0]['count'])
-        except Exception as e:
-            logger.error(f"Failed to get total record count: {e}")
-            return 0
-    
-    def fetch_data_chunk(self, offset: int, limit: int) -> List[Dict]:
-        """Fetch a chunk of data with offset and limit"""
-        try:
-            params = {
-                '$limit': limit,
-                '$offset': offset,
-                '$order': 'date DESC'  # Get most recent data first
-            }
-            
-            response = self.session.get(self.config.base_url, params=params)
-            response.raise_for_status()
-            
-            time.sleep(self.config.rate_limit_delay)  # Rate limiting
-            return response.json()
-            
-        except Exception as e:
-            logger.error(f"Failed to fetch chunk at offset {offset}: {e}")
-            return []
-    
-    def fetch_all_data(self, max_records: Optional[int] = None) -> Generator[pd.DataFrame, None, None]:
-        """
-        Fetch all data in chunks, yielding DataFrames
+    try:
+        # Load standard datasets
+        print("Loading standard datasets...")
+        Distributors_Virginia_Three_Main = pd.read_csv(base_url + "data/Distributors_Virginia_Three_Main.csv")
+        wine_producers = pd.read_csv(base_url + "data/wine_producers.csv")
+        Warehouse_and_Retail_Sales = pd.read_csv(base_url + "data/Warehouse_and_Retail_Sales.csv")
+        Wine_Review_Data = pd.read_csv(base_url + "data/winemag-data-130k-v2.csv/winemag-data-130k-v2.csv")
         
-        Args:
-            max_records: Maximum records to fetch (None for all)
-            
-        Yields:
-            DataFrame chunks
-        """
-        total_records = self.get_total_records()
-        if max_records:
-            total_records = min(total_records, max_records)
-        
-        logger.info(f"Fetching {total_records:,} records from Montgomery County API")
-        
-        offset = 0
-        chunk_size = min(self.config.chunk_size, total_records)
-        
-        while offset < total_records:
-            current_limit = min(chunk_size, total_records - offset)
-            
-            logger.info(f"Fetching records {offset:,} to {offset + current_limit:,}")
-            
-            chunk_data = self.fetch_data_chunk(offset, current_limit)
-            
-            if not chunk_data:
-                logger.warning(f"No data returned for offset {offset}")
-                break
-            
-            df_chunk = pd.DataFrame(chunk_data)
-            
-            # Basic data cleaning
-            df_chunk = self.clean_chunk(df_chunk)
-            
-            yield df_chunk
-            
-            offset += current_limit
-    
-    def clean_chunk(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Basic cleaning for API data chunk"""
-        # Standardize column names
-        df.columns = df.columns.str.upper().str.replace(' ', '_')
-        
-        # Convert date columns
-        date_columns = ['DATE']
-        for col in date_columns:
-            if col in df.columns:
-                df[col] = pd.to_datetime(df[col], errors='coerce')
-        
-        # Clean text columns
-        text_columns = ['ITEM_TYPE', 'ITEM_DESCRIPTION', 'SUPPLIER']
-        for col in text_columns:
-            if col in df.columns:
-                df[col] = df[col].astype(str).str.strip().str.upper()
-        
-        return df
-
-
-class DataManager:
-    """Handle database operations and data persistence"""
-    
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self.init_database()
-    
-    def init_database(self):
-        """Initialize SQLite database with required tables"""
-        conn = sqlite3.connect(self.db_path)
-        
-        # Sales data table
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS sales_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                item_type TEXT,
-                item_description TEXT,
-                supplier TEXT,
-                item_code TEXT,
-                year INTEGER,
-                month INTEGER,
-                data_hash TEXT UNIQUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Matched results table
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS matched_results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sales_id INTEGER,
-                wine_name_extracted TEXT,
-                review_match_score REAL,
-                review_title TEXT,
-                review_country TEXT,
-                review_variety TEXT,
-                review_points INTEGER,
-                review_price REAL,
-                match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (sales_id) REFERENCES sales_data (id)
-            )
-        ''')
-        
-        # Processing metadata
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS processing_metadata (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                process_type TEXT,
-                start_time TIMESTAMP,
-                end_time TIMESTAMP,
-                records_processed INTEGER,
-                matches_found INTEGER,
-                success BOOLEAN,
-                notes TEXT
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
-        logger.info(f"Database initialized at {self.db_path}")
-    
-    def store_sales_chunk(self, df: pd.DataFrame) -> List[int]:
-        """Store sales data chunk and return list of IDs"""
-        conn = sqlite3.connect(self.db_path)
-        
-        # Add data hash for deduplication
-        df['data_hash'] = df.apply(
-            lambda row: hashlib.md5(
-                str(row.to_dict()).encode()
-            ).hexdigest(), axis=1
+        # Load suppliers with data quality fix
+        print("Loading and fixing supplier data structure...")
+        correct_columns = ['License_ID', 'Trade Name', 'Address', 'City', 'State', 'Zip_Code', 'Report_Type']
+        Suppliers_Fixed = pd.read_csv(
+            base_url + "data/Suppliers_Importers_Retailers.csv",
+            header=0,
+            names=correct_columns,
+            usecols=range(7),
+            dtype={'License_ID': str, 'Zip_Code': str}
         )
         
-        try:
-            # Insert with IGNORE to handle duplicates
-            df.to_sql('sales_data', conn, if_exists='append', index=False, method='replace')
-            
-            # Get the IDs of inserted records
-            cursor = conn.execute(
-                "SELECT id FROM sales_data WHERE data_hash IN ({})".format(
-                    ','.join(['?' for _ in df['data_hash']])
-                ), df['data_hash'].tolist()
-            )
-            
-            ids = [row[0] for row in cursor.fetchall()]
-            conn.commit()
-            return ids
-            
-        except Exception as e:
-            logger.error(f"Error storing sales chunk: {e}")
-            return []
-        finally:
-            conn.close()
-    
-    def get_recent_sales_data(self, days: int = 30) -> pd.DataFrame:
-        """Get recent sales data for incremental updates"""
-        conn = sqlite3.connect(self.db_path)
+        # Professional summaries
+        datasets = [
+            (Distributors_Virginia_Three_Main, "Virginia Distributors"),
+            (wine_producers, "Wine Producers"),
+            (Warehouse_and_Retail_Sales, "Sales Transactions"),
+            (Wine_Review_Data, "Wine Reviews"),
+            (Suppliers_Fixed, "Supplier Directory (Fixed)")
+        ]
         
-        query = """
-            SELECT * FROM sales_data 
-            WHERE created_at >= datetime('now', '-{} days')
-            AND item_type = 'WINE'
-            ORDER BY created_at DESC
-        """.format(days)
+        for df, name in datasets:
+            memory_mb = df.memory_usage(deep=True).sum() / 1024**2
+            print(f"{name:<25} │ {df.shape[0]:>8,} rows × {df.shape[1]:>2} cols │ {memory_mb:>6.1f} MB")
         
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return df
-    
-    def store_matches(self, matches: List[Dict]):
-        """Store matching results"""
-        conn = sqlite3.connect(self.db_path)
+        # Quick validation for suppliers
+        report_types = Suppliers_Fixed['Report_Type'].nunique()
+        print(f"Supplier validation: {report_types} unique report types identified")
         
-        df_matches = pd.DataFrame(matches)
-        df_matches.to_sql('matched_results', conn, if_exists='append', index=False)
+        print("=" * 60)
+        print(f"Successfully loaded {len(datasets)} datasets with data quality fixes applied")
         
-        conn.commit()
-        conn.close()
-
-
-class OptimizedWineMatcher:
-    """Optimized wine matching with parallel processing and caching"""
-    
-    def __init__(self, config: ProcessingConfig):
-        self.config = config
-        self.cache = {}
+        # Cache the datasets for next steps
+        data_dir = Path("data/raw")
+        data_dir.mkdir(parents=True, exist_ok=True)
         
-        # Load cache if it exists
-        if config.cache_enabled and os.path.exists('match_cache.pkl'):
-            try:
-                with open('match_cache.pkl', 'rb') as f:
-                    self.cache = pickle.load(f)
-                logger.info(f"Loaded {len(self.cache)} cached matches")
-            except Exception as e:
-                logger.warning(f"Could not load cache: {e}")
-    
-    def clean_text_for_matching(self, text: str) -> str:
-        """Enhanced text cleaning for matching"""
-        if pd.isna(text):
-            return ""
+        print(f"\nCaching datasets to {data_dir}...")
+        Distributors_Virginia_Three_Main.to_csv(data_dir / "distributors.csv", index=False)
+        wine_producers.to_csv(data_dir / "wine_producers.csv", index=False) 
+        Warehouse_and_Retail_Sales.to_csv(data_dir / "sales_transactions.csv", index=False)
+        Wine_Review_Data.to_csv(data_dir / "wine_reviews.csv", index=False)
+        Suppliers_Fixed.to_csv(data_dir / "suppliers_fixed.csv", index=False)
         
-        text = str(text).upper()
+        print(" All datasets cached locally")
+        print()
+        print(" CHECKPOINT REACHED!")
+        print("Now with everything loaded, you can begin data cleaning and refinement.")
+        print("After investigating the sales data, there are a few cleaning steps that need to take place:")
+        print("- First will be removing all values that are not wine and beer items")
+        print("- Second will be ensuring item codes are numeric for easier processing") 
+        print("- Finally, some individual values will be changed and anything that isn't wine or beer will be removed")
+        print("- Also removing keg versions of wines and beer for simpler scope")
         
-        # Remove volume indicators
-        text = re.sub(r'\s*-\s*(750ML|1\.5L|375ML|187ML|3L|500ML|1L)\s*$', '', text)
-        
-        # Expand common abbreviations
-        abbreviations = {
-            'CH ': 'CHATEAU ', 'DOM ': 'DOMAINE ', 'S/BLC': 'SAUVIGNON BLANC',
-            'P/GRIG': 'PINOT GRIGIO', 'P/GRIS': 'PINOT GRIS', 'P/NOIR': 'PINOT NOIR',
-            'CAB SAV': 'CABERNET SAUVIGNON', 'CAB': 'CABERNET', 'CHARD': 'CHARDONNAY'
+        # Return datasets for potential immediate use
+        return {
+            'distributors': Distributors_Virginia_Three_Main,
+            'producers': wine_producers,
+            'sales': Warehouse_and_Retail_Sales,
+            'reviews': Wine_Review_Data,
+            'suppliers': Suppliers_Fixed
         }
         
-        for abbrev, full_form in abbreviations.items():
-            text = text.replace(abbrev, full_form)
-        
-        # Clean punctuation and extra spaces
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = ' '.join(text.split())
-        
-        return text.strip()
-    
-    def match_chunk_parallel(self, sales_chunk: pd.DataFrame, 
-                           review_data: pd.DataFrame) -> List[Dict]:
-        """Match a chunk of sales data against reviews using parallel processing"""
-        
-        wine_sales = sales_chunk[sales_chunk['ITEM_TYPE'] == 'WINE'].copy()
-        
-        if len(wine_sales) == 0:
-            return []
-        
-        matches = []
-        cache_hits = 0
-        
-        if self.config.enable_parallel and len(wine_sales) > 100:
-            # Use parallel processing for large chunks
-            chunk_size = max(10, len(wine_sales) // self.config.max_workers)
-            chunks = [wine_sales[i:i+chunk_size] for i in range(0, len(wine_sales), chunk_size)]
-            
-            with ProcessPoolExecutor(max_workers=self.config.max_workers) as executor:
-                futures = [
-                    executor.submit(self._process_wine_chunk, chunk, review_data)
-                    for chunk in chunks
-                ]
-                
-                for future in as_completed(futures):
-                    chunk_matches = future.result()
-                    matches.extend(chunk_matches)
-        else:
-            # Sequential processing for smaller chunks
-            matches = self._process_wine_chunk(wine_sales, review_data)
-        
-        return matches
-    
-    def _process_wine_chunk(self, wine_chunk: pd.DataFrame, 
-                          review_data: pd.DataFrame) -> List[Dict]:
-        """Process a single chunk of wine data"""
-        matches = []
-        
-        for _, row in wine_chunk.iterrows():
-            item_desc = row['ITEM_DESCRIPTION']
-            
-            # Check cache first
-            if item_desc in self.cache:
-                match_result = self.cache[item_desc]
-            else:
-                # Find match
-                wine_name = self.clean_text_for_matching(item_desc)
-                match_result = self._find_wine_match(wine_name, review_data)
-                
-                # Cache result
-                if self.config.cache_enabled:
-                    self.cache[item_desc] = match_result
-            
-            if match_result['match_score'] >= self.config.matching_threshold:
-                match_dict = {
-                    'sales_id': row.get('id'),
-                    'wine_name_extracted': match_result['wine_name'],
-                    'review_match_score': match_result['match_score'],
-                    'review_title': match_result.get('title', ''),
-                    'review_country': match_result.get('country', ''),
-                    'review_variety': match_result.get('variety', ''),
-                    'review_points': match_result.get('points', 0),
-                    'review_price': match_result.get('price', 0.0)
-                }
-                matches.append(match_dict)
-        
-        return matches
-    
-    def _find_wine_match(self, wine_name: str, review_data: pd.DataFrame) -> Dict:
-        """Find best matching wine review"""
-        if len(wine_name) < 3:
-            return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Pre-filter using vectorized string operations
-        search_words = wine_name.split()
-        if not search_words:
-            return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Create boolean mask for potential matches
-        mask = pd.Series([False] * len(review_data))
-        
-        for word in search_words:
-            if len(word) > 2:
-                mask |= review_data['title'].str.contains(word, case=False, na=False)
-        
-        potential_matches = review_data[mask].head(50)  # Limit for performance
-        
-        if len(potential_matches) == 0:
-            return {'wine_name': wine_name, 'match_score': 0}
-        
-        # Find best match using vectorized operations
-        best_score = 0
-        best_match = None
-        
-        for _, candidate in potential_matches.iterrows():
-            candidate_clean = self.clean_text_for_matching(candidate['title'])
-            score = SequenceMatcher(None, wine_name, candidate_clean).ratio()
-            
-            if score > best_score:
-                best_score = score
-                best_match = candidate
-        
-        if best_match is not None and best_score >= self.config.matching_threshold:
-            return {
-                'wine_name': wine_name,
-                'match_score': best_score,
-                **best_match.to_dict()
-            }
-        
-        return {'wine_name': wine_name, 'match_score': 0}
-    
-    def save_cache(self):
-        """Save matching cache to disk"""
-        if self.config.cache_enabled and self.cache:
-            try:
-                with open('match_cache.pkl', 'wb') as f:
-                    pickle.dump(self.cache, f)
-                logger.info(f"Saved {len(self.cache)} cached matches")
-            except Exception as e:
-                logger.error(f"Could not save cache: {e}")
-
-
-class WineMatchingPipeline:
-    """Main pipeline orchestrator"""
-    
-    def __init__(self, api_config: APIConfig, processing_config: ProcessingConfig):
-        self.api = MontgomeryCountyAPI(api_config)
-        self.data_manager = DataManager(processing_config.database_path)
-        self.matcher = OptimizedWineMatcher(processing_config)
-        self.processing_config = processing_config
-    
-    def run_full_update(self, max_records: Optional[int] = None):
-        """Run complete data update and matching process"""
-        start_time = datetime.now()
-        total_processed = 0
-        total_matches = 0
-        
-        logger.info("Starting full wine matching pipeline")
-        
-        # Load review data (assuming it's static or updated separately)
-        review_data = self._load_review_data()
-        
-        if review_data is None or len(review_data) == 0:
-            logger.error("No review data available")
-            return
-        
-        try:
-            # Process data in chunks
-            for chunk_df in self.api.fetch_all_data(max_records):
-                logger.info(f"Processing chunk with {len(chunk_df)} records")
-                
-                # Store sales data
-                sales_ids = self.data_manager.store_sales_chunk(chunk_df)
-                
-                # Add IDs to chunk for matching
-                chunk_df['id'] = sales_ids
-                
-                # Match wines in this chunk
-                matches = self.matcher.match_chunk_parallel(chunk_df, review_data)
-                
-                # Store matches
-                if matches:
-                    self.data_manager.store_matches(matches)
-                    total_matches += len(matches)
-                
-                total_processed += len(chunk_df)
-                logger.info(f"Chunk complete: {len(matches)} matches found")
-            
-            # Save cache
-            self.matcher.save_cache()
-            
-            end_time = datetime.now()
-            duration = end_time - start_time
-            
-            # Log completion
-            self._log_processing_metadata(
-                'full_update', start_time, end_time,
-                total_processed, total_matches, True,
-                f"Processed {total_processed:,} records, found {total_matches:,} matches"
-            )
-            
-            logger.info(f"Pipeline complete: {total_processed:,} records processed, "
-                       f"{total_matches:,} matches found in {duration}")
-            
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}")
-            self._log_processing_metadata(
-                'full_update', start_time, datetime.now(),
-                total_processed, total_matches, False, str(e)
-            )
-            raise
-    
-    def run_incremental_update(self, days: int = 7):
-        """Run incremental update for recent data"""
-        logger.info(f"Running incremental update for last {days} days")
-        
-        # Get recent unmatched data
-        recent_data = self.data_manager.get_recent_sales_data(days)
-        
-        if len(recent_data) == 0:
-            logger.info("No recent data to process")
-            return
-        
-        # Load review data
-        review_data = self._load_review_data()
-        
-        # Match recent wines
-        matches = self.matcher.match_chunk_parallel(recent_data, review_data)
-        
-        # Store matches
-        if matches:
-            self.data_manager.store_matches(matches)
-        
-        logger.info(f"Incremental update complete: {len(matches)} new matches")
-    
-    def _load_review_data(self) -> Optional[pd.DataFrame]:
-        """Load wine review data from Kaggle dataset or cached file"""
-        # This would load your Kaggle wine review dataset
-        # You could implement caching, database storage, or API fetching here
-        try:
-            # Example implementation - adjust path as needed
-            return pd.read_csv('wine_reviews.csv')
-        except FileNotFoundError:
-            logger.error("Wine review data not found - download from Kaggle first")
-            return None
-    
-    def _log_processing_metadata(self, process_type: str, start_time: datetime,
-                               end_time: datetime, records_processed: int,
-                               matches_found: int, success: bool, notes: str):
-        """Log processing metadata to database"""
-        conn = sqlite3.connect(self.data_manager.db_path)
-        
-        metadata = {
-            'process_type': process_type,
-            'start_time': start_time.isoformat(),
-            'end_time': end_time.isoformat(),
-            'records_processed': records_processed,
-            'matches_found': matches_found,
-            'success': success,
-            'notes': notes
-        }
-        
-        df_meta = pd.DataFrame([metadata])
-        df_meta.to_sql('processing_metadata', conn, if_exists='append', index=False)
-        conn.commit()
-        conn.close()
-
-
-# Example usage and configuration
-def main():
-    """Main execution function"""
-    
-    # Configuration
-    api_config = APIConfig(
-        app_token="YOUR_APP_TOKEN_HERE",  # Get from https://dev.socrata.com/
-        chunk_size=5000,  # Smaller chunks for memory efficiency
-        rate_limit_delay=0.1
-    )
-    
-    processing_config = ProcessingConfig(
-        matching_threshold=0.6,
-        enable_parallel=True,
-        max_workers=4,
-        cache_enabled=True,
-        database_path="wine_data.db"
-    )
-    
-    # Create pipeline
-    pipeline = WineMatchingPipeline(api_config, processing_config)
-    
-    # Run different update types based on schedule
-    import sys
-    
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
-        if mode == "full":
-            pipeline.run_full_update()
-        elif mode == "incremental":
-            pipeline.run_incremental_update(days=7)
-        elif mode == "test":
-            pipeline.run_full_update(max_records=1000)  # Test with 1000 records
-    else:
-        print("Usage: python aws_wine_matching_system.py [full|incremental|test]")
-
+    except Exception as e:
+        print(f" Error loading data: {e}")
+        raise
 
 if __name__ == "__main__":
-    main()
+    datasets = main()
+EOF
+
+    chmod +x scripts/load_github_data.py
+}
+
+# Test git accessibility
+test_git_access() {
+    echo " Testing GitHub repository access..."
+    
+    # Test direct access to one of your files
+    test_url="https://raw.githubusercontent.com/ac604605/Montgomery_County_Dashboard/main/data/wine_producers.csv"
+    
+    if command -v curl &> /dev/null; then
+        echo "Testing access to: $test_url"
+        if curl -s --head "$test_url" | head -n 1 | grep -q "200 OK"; then
+            echo " GitHub repository is accessible"
+            # Show first few lines to verify content
+            echo "Sample data preview:"
+            curl -s "$test_url" | head -3
+        else
+            echo " Cannot access GitHub repository"
+            exit 1
+        fi
+    else
+        echo "️  curl not available, skipping connectivity test"
+    fi
+}
+
+# Create simple health check
+create_health_check() {
+    cat > scripts/health_check.py << 'EOF'
+#!/usr/bin/env python3
+"""Simple health check for the pipeline environment"""
+
+import sys
+import os
+from pathlib import Path
+
+def check_environment():
+    print(" Environment Health Check")
+    print("=" * 30)
+    
+    # Check Python version
+    print(f"Python version: {sys.version}")
+    
+    # Check required packages
+    required_packages = ['pandas', 'requests', 'numpy']
+    for package in required_packages:
+        try:
+            __import__(package)
+            print(f" {package} available")
+        except ImportError:
+            print(f" {package} missing")
+            return False
+    
+    # Check directory structure
+    expected_dirs = ['data/raw', 'data/processed', 'data/logs', 'scripts']
+    for dir_path in expected_dirs:
+        if Path(dir_path).exists():
+            print(f" {dir_path} exists")
+        else:
+            print(f"️  {dir_path} missing (will be created)")
+    
+    print("=" * 30)
+    print(" Environment check complete")
+    return True
+
+if __name__ == "__main__":
+    healthy = check_environment()
+    sys.exit(0 if healthy else 1)
+EOF
+
+    chmod +x scripts/health_check.py
+}
+
+# Main setup function
+main() {
+    echo "Starting setup for environment: $ENVIRONMENT"
+    
+    # Environment-specific setup
+    if [ "$ENVIRONMENT" = "ec2" ]; then
+        setup_ec2
+    else
+        setup_docker
+    fi
+    
+    # Common setup
+    create_project_structure
+    create_health_check
+    test_git_access
+    
+    # Set proper permissions
+    if [ "$ENVIRONMENT" = "ec2" ]; then
+        chown -R ec2-user:ec2-user $PROJECT_DIR
+        chmod -R 755 $PROJECT_DIR
+    fi
+    
+    echo ""
+    echo " SETUP COMPLETE!"
+    echo "=================="
+    echo ""
+    echo "Ready to run checkpoint test:"
+    if [ "$ENVIRONMENT" = "ec2" ]; then
+        echo "  cd $PROJECT_DIR"
+        echo "  source venv/bin/activate"
+    fi
+    echo "  python scripts/health_check.py"
+    echo "  python scripts/load_github_data.py"
+    echo ""
+
+}
+
+# Run setup
+main "$@"
