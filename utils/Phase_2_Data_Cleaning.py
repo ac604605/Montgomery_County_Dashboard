@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 import os
 import data_enhancement_utils as deu
+import importlib
+importlib.reload(deu)
 
 print("✓ Successfully imported data_enhancement_utils")
 
