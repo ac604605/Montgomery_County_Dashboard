@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Phase 2: Data Cleaning and Standardization
-Loads cached GitHub data, runs cleaning pipeline, saves cleaned result
+Phase 2: Data Cleaning, Standardization, and Supplier Enrichment
+Loads cached GitHub data, runs cleaning pipeline, enriches supplier info, saves results
 Works in both EC2 and Docker environments
 """
 
@@ -9,15 +9,7 @@ import pandas as pd
 import sys
 from pathlib import Path
 import os
-import data_enhancement_utils as deu
 import importlib
-importlib.reload(deu)
-
-print("✓ Successfully imported data_enhancement_utils")
-
-# Debug: List all available functions in the module
-print("Available functions in deu module:")
-print([attr for attr in dir(deu) if not attr.startswith('_')])
 
 # Add utils directory to Python path for imports
 project_root = Path(__file__).parent.parent
@@ -28,93 +20,86 @@ sys.path.append(str(project_root / 'data'))
 # Import the data enhancement utilities
 try:
     import data_enhancement_utils as deu
-    print(" Successfully imported data_enhancement_utils")
+    importlib.reload(deu)  # Reload if module has changed
+    print("✓ Successfully imported data_enhancement_utils")
 except ImportError as e:
-    print(f" Error importing data_enhancement_utils: {e}")
-    print(f"Make sure data_enhancement_utils.py is in the utils directory")
+    print(f"Error importing data_enhancement_utils: {e}")
+    print("Make sure data_enhancement_utils.py is in the utils directory")
     sys.exit(1)
+
+# Debug: List all available functions in the module
+print("Available functions in deu module:")
+print([attr for attr in dir(deu) if not attr.startswith('_')])
 
 def load_cached_data(data_dir: Path):
     """Load the cached datasets from Phase 1"""
     print("Loading cached datasets from Phase 1...")
-    
-    # Check if cached files exist
+
     required_files = {
-        'Warehouse_and_Retail_Sales.csv': 'Warehouse_and_Retail_Sales',  # Excel file
+        'Warehouse_and_Retail_Sales.csv': 'Warehouse_and_Retail_Sales',
         'Distributors_Virginia_Three_Main.csv': 'Distributors_Virginia_Three_Main', 
         'wine_producers.csv': 'wine_producers',
         'winemag-data-130k-v2.csv': 'Wine_Review_Data',
         'Suppliers_Importers_Retailers.csv': 'Suppliers_Fixed'
     }
-    
+
     datasets = {}
-    
     for filename, dataset_name in required_files.items():
         file_path = data_dir / filename
         if not file_path.exists():
-            print(f" Required file not found: {file_path}")
+            print(f"Required file not found: {file_path}")
             print("Please run scripts/load_github_data.py first")
             return None
-        
+
         try:
             df = pd.read_csv(file_path)
             datasets[dataset_name] = df
-            print(f" Loaded {dataset_name}: {df.shape[0]:,} rows × {df.shape[1]} cols")
+            print(f"Loaded {dataset_name}: {df.shape[0]:,} rows × {df.shape[1]} cols")
         except Exception as e:
-            print(f" Error loading {filename}: {e}")
+            print(f"Error loading {filename}: {e}")
             return None
-    
+
     return datasets
 
-def run_phase2_cleaning():
-    """Run Phase 2 data cleaning pipeline"""
+def run_phase2():
+    """Run Phase 2: Cleaning + Supplier Enrichment"""
     
-    print(" PHASE 2: DATA CLEANING AND STANDARDIZATION")
+    print("\nPHASE 2: DATA CLEANING AND STANDARDIZATION")
     print("=" * 60)
-    
-    # Set up paths
-    project_root = Path(__file__).parent.parent
+
+    # Paths
     data_dir = project_root / 'data'
-    processed_dir = project_root / 'data' / 'processed'
+    processed_dir = data_dir / 'processed'
     processed_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Load cached datasets
     datasets = load_cached_data(data_dir)
     if datasets is None:
-        return False
-    
-    # Get the sales data (main dataset for cleaning)
+        return None
+
+    # Phase 2A: Cleaning
     sales_data = datasets['Warehouse_and_Retail_Sales']
-    
-    print(f"\n Starting with sales dataset:")
-    print(f"Shape: {sales_data.shape}")
-    print(f"Columns: {list(sales_data.columns)}")
-    
-    # Create working copy for processing
-    print("\nCreating working copy of sales data...")
+    print(f"\nStarting with sales dataset: {sales_data.shape[0]:,} rows × {sales_data.shape[1]} cols")
     df_working = sales_data.copy()
-    print(f"Working dataset: {df_working.shape[0]:,} rows × {df_working.shape[1]} columns")
-    
-    # Run enhanced data cleaning utilities
-    print("\nStarting data cleaning pipeline...")
+
+    print("\nRunning data cleaning pipeline...")
     try:
         df_clean, cleaning_report = deu.run_complete_item_code_standardization(
             df_working, 
             item_types_to_keep=['WINE', 'BEER']
         )
-        
-        # Show cleaning results  
-        print(f"\n CLEANING RESULTS:")
-        print(f"   Original: {cleaning_report['original_shape']}")
-        print(f"   Cleaned:  {cleaning_report['final_shape']}")
-        print(f"   Retention: {cleaning_report['summary']['data_retention_pct']:.1f}%")
-        
+
+        # Show cleaning results
+        print(f"\nCLEANING RESULTS:")
+        print(f"Original: {cleaning_report['original_shape']}")
+        print(f"Cleaned:  {cleaning_report['final_shape']}")
+        print(f"Retention: {cleaning_report['summary']['data_retention_pct']:.1f}%")
+
         # Save cleaned dataset
-        output_file = processed_dir / 'cleaned_sales_data.csv'
-        df_clean.to_csv(output_file, index=False)
-        print(f"\n Cleaned dataset saved to: {output_file}")
-        print(f"   File size: {output_file.stat().st_size / 1024**2:.1f} MB")
-        
+        cleaned_file = processed_dir / 'cleaned_sales_data.csv'
+        df_clean.to_csv(cleaned_file, index=False)
+        print(f"Cleaned dataset saved to: {cleaned_file}")
+
         # Save cleaning report
         report_file = processed_dir / 'cleaning_report.txt'
         with open(report_file, 'w') as f:
@@ -124,85 +109,69 @@ def run_phase2_cleaning():
             f.write(f"Final shape: {cleaning_report['final_shape']}\n")
             f.write(f"Data retention: {cleaning_report['summary']['data_retention_pct']:.1f}%\n")
             f.write(f"Steps completed: {', '.join(cleaning_report['steps_completed'])}\n\n")
-            
             f.write("Data Quality Improvements:\n")
             for improvement in cleaning_report.get('data_quality_improvements', []):
                 f.write(f"- {improvement}\n")
-        
-        print(f" Cleaning report saved to: {report_file}")
-        
-        # Quick validation of cleaned data
-        print(f"\n VALIDATION:")
-        print(f" Final dataset shape: {df_clean.shape}")
-        print(f" Item types: {df_clean['ITEM TYPE'].value_counts().to_dict()}")
-        print(f" Missing suppliers: {df_clean['SUPPLIER'].isnull().sum()}")
-        print(f" Numeric item codes: {pd.api.types.is_numeric_dtype(df_clean['ITEM CODE'])}")
-        
-        print(f"\n PHASE 2 COMPLETE!")
-        print(f"Cleaned dataset ready for next steps at: {output_file}")
-        
-        return True
-        
+        print(f"Cleaning report saved to: {report_file}")
+
     except Exception as e:
-        print(f"\n ERROR during cleaning pipeline: {e}")
-        print(f"Check that your data has the expected columns:")
-        print(f"Required: SUPPLIER, ITEM CODE, ITEM TYPE, ITEM DESCRIPTION")
-        return False
-        
-    # Add this after the cleaning pipeline completes
-    print("\n" + "="*60)
-    print("PHASE 2B: SUPPLIER ENRICHMENT")
-    print("="*60)
+        print(f"\nERROR during cleaning pipeline: {e}")
+        return None
 
-    # Run supplier enrichment
+    # Phase 2B: Supplier Enrichment
+    print("\nPHASE 2B: SUPPLIER ENRICHMENT")
+    print("=" * 60)
     print("Enhancing sales data with supplier information...")
-    df_enhanced = deu.run_supplier_enrichment(
-        df_clean, 
-        datasets['Suppliers_Fixed'],  # Use the loaded suppliers data
-        test_mode=False
-    )
 
-    # Check the results
-    matched_suppliers = df_enhanced[
-        (df_enhanced['SUPPLIER_MATCH_SCORE'] >= 0.8) & 
-        (df_enhanced['SUPPLIER_REPORT_TYPE'] == 'Wholesale Wine Distributors')
-    ]
+    try:
+        df_enhanced = deu.run_supplier_enrichment(
+            df_clean,
+            datasets['Suppliers_Fixed'],
+            test_mode=False
+        )
 
-    print(f"\nWholesale Wine Distributors found:")
-    print(matched_suppliers['SUPPLIER'].value_counts())
+        matched_suppliers = df_enhanced[
+            (df_enhanced['SUPPLIER_MATCH_SCORE'] >= 0.8) &
+            (df_enhanced['SUPPLIER_REPORT_TYPE'] == 'Wholesale Wine Distributors')
+        ]
 
-    print(f"\nSample matched data:")
-    print(matched_suppliers[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE']].head(10))
+        print(f"\nWholesale Wine Distributors found:")
+        print(matched_suppliers['SUPPLIER'].value_counts())
 
-    # Save the enhanced dataset instead of just the cleaned one
-    output_file = processed_dir / 'enhanced_sales_data.csv'
-    df_enhanced.to_csv(output_file, index=False)
-    print(f"\nEnhanced dataset saved to: {output_file}")
-        
+        print(f"\nSample matched data:")
+        print(matched_suppliers[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE']].head(10))
+
+        # Save enhanced dataset
+        enhanced_file = processed_dir / 'enhanced_sales_data.csv'
+        df_enhanced.to_csv(enhanced_file, index=False)
+        print(f"\nEnhanced dataset saved to: {enhanced_file}")
+
+    except Exception as e:
+        print(f"\nERROR during supplier enrichment: {e}")
+        return None
+
+    print("\nPHASE 2 COMPLETE!")
+    return df_clean, df_enhanced, datasets
+
 def main():
     """Main execution function"""
     
-    # Check environment
     if Path('/.dockerenv').exists():
         print("Running in Docker environment")
     else:
         print("Running in EC2 environment")
     
-    success = run_phase2_cleaning()
-    
-    if success:
-        print("\n Phase 2 completed successfully!")
-        print("Next steps:")
-        print("- Cleaned dataset is ready for further processing")
-        print("- You can now add fuzzy matching, column additions, etc.")
-        print("- Data is cached for future incremental updates")
-    else:
-        print("\n Phase 2 failed - check error messages above")
+    results = run_phase2()
+    if results is None:
+        print("\nPhase 2 failed - check error messages above")
         return 1
-    
+
+    df_clean, df_enhanced, datasets = results
+    print("\nPhase 2 completed successfully!")
+    print(f"- Cleaned dataset ready: {Path('data/processed/cleaned_sales_data.csv')}")
+    print(f"- Enhanced dataset ready: {Path('data/processed/enhanced_sales_data.csv')}")
     return 0
-    
+
 if __name__ == "__main__":
     exit_code = main()
-
-
+    sys.exit(exit_code)
