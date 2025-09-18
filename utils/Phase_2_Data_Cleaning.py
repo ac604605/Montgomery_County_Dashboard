@@ -65,7 +65,7 @@ def run_phase2_cleaning():
     
     # Set up paths
     project_root = Path(__file__).parent.parent
-    data_dir = project_root / 'data' / 'raw'
+    data_dir = project_root / 'data' /
     processed_dir = project_root / 'data' / 'processed'
     processed_dir.mkdir(parents=True, exist_ok=True)
     
