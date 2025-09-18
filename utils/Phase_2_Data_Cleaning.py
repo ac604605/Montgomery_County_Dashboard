@@ -19,7 +19,7 @@ import importlib
 
 # Import the data enhancement utilities
 try:
-    import data_enhancement_utils as deu
+    import data_enhancements_utils as deu
     importlib.reload(deu)  # Reload if module has changed
     print("✓ Successfully imported data_enhancement_utils")
 except ImportError as e:
