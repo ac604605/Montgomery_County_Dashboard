@@ -4,18 +4,21 @@ Phase 2: Data Cleaning, Standardization, and Supplier Enrichment
 Loads cached GitHub data, runs cleaning pipeline, enriches supplier info, saves results
 Works in both EC2 and Docker environments
 """
-from utils import data_enhancement_utils
+import sys
+from pathlib import Path
+
+# Determine project root (one level above 'utils')
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / 'data'))
+
 import pandas as pd
 import sys
 from pathlib import Path
 import os
 import importlib
 
-# Add utils directory to Python path for imports
-project_root = Path(__file__).parent.parent
-sys.path.append(str(project_root))
-sys.path.append(str(project_root / 'utils'))
-sys.path.append(str(project_root / 'data'))
 
 # Import the data enhancement utilities
 try:

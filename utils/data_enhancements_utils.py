@@ -4,7 +4,15 @@ Data Enhancement Utilities (deu)
 Standalone module for Montgomery County data cleaning pipeline
 Works in both EC2 and Docker environments
 """
-from utils import data_enhancement_utils
+import sys
+from pathlib import Path
+
+# Determine project root (one level above 'utils')
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / 'data'))
+
 import pandas as pd
 import numpy as np
 from typing import Optional, Dict, List, Union, Tuple, Any
