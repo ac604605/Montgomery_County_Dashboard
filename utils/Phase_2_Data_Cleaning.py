@@ -31,11 +31,11 @@ def load_cached_data(data_dir: Path):
     
     # Check if cached files exist
     required_files = {
-        'Warehouse_and_Retail_Sales': 'Warehouse_and_Retail_Sales',  # Excel file
-        'Distributors_Virginia_Three_Main': 'Distributors_Virginia_Three_Main', 
-        'wine_producers': 'wine_producers',
-        'winemag-data-130k-v2': 'Wine_Review_Data',
-        'Suppliers_Importers_Retailers': 'Suppliers_Fixed'
+        'Warehouse_and_Retail_Sales.csv': 'Warehouse_and_Retail_Sales',  # Excel file
+        'Distributors_Virginia_Three_Main.csv': 'Distributors_Virginia_Three_Main', 
+        'wine_producers': 'wine_producers.csv',
+        'winemag-data-130k-v2.csv': 'Wine_Review_Data',
+        'Suppliers_Importers_Retailers.csv': 'Suppliers_Fixed'
     }
     
     datasets = {}
