@@ -149,35 +149,35 @@ def run_phase2_cleaning():
         print(f"Required: SUPPLIER, ITEM CODE, ITEM TYPE, ITEM DESCRIPTION")
         return False
         
-        # Add this after the cleaning pipeline completes
-        print("\n" + "="*60)
-        print("PHASE 2B: SUPPLIER ENRICHMENT")
-        print("="*60)
+    # Add this after the cleaning pipeline completes
+    print("\n" + "="*60)
+    print("PHASE 2B: SUPPLIER ENRICHMENT")
+    print("="*60)
 
-        # Run supplier enrichment
-        print("Enhancing sales data with supplier information...")
-        df_enhanced = deu.run_supplier_enrichment(
-            df_clean, 
-            datasets['Suppliers_Fixed'],  # Use the loaded suppliers data
-            test_mode=False
-        )
+    # Run supplier enrichment
+    print("Enhancing sales data with supplier information...")
+    df_enhanced = deu.run_supplier_enrichment(
+        df_clean, 
+        datasets['Suppliers_Fixed'],  # Use the loaded suppliers data
+        test_mode=False
+    )
 
-        # Check the results
-        matched_suppliers = df_enhanced[
-            (df_enhanced['SUPPLIER_MATCH_SCORE'] >= 0.8) & 
-            (df_enhanced['SUPPLIER_REPORT_TYPE'] == 'Wholesale Wine Distributors')
-        ]
+    # Check the results
+    matched_suppliers = df_enhanced[
+        (df_enhanced['SUPPLIER_MATCH_SCORE'] >= 0.8) & 
+        (df_enhanced['SUPPLIER_REPORT_TYPE'] == 'Wholesale Wine Distributors')
+    ]
 
-        print(f"\nWholesale Wine Distributors found:")
-        print(matched_suppliers['SUPPLIER'].value_counts())
+    print(f"\nWholesale Wine Distributors found:")
+    print(matched_suppliers['SUPPLIER'].value_counts())
 
-        print(f"\nSample matched data:")
-        print(matched_suppliers[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE']].head(10))
+    print(f"\nSample matched data:")
+    print(matched_suppliers[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE']].head(10))
 
-        # Save the enhanced dataset instead of just the cleaned one
-        output_file = processed_dir / 'enhanced_sales_data.csv'
-        df_enhanced.to_csv(output_file, index=False)
-        print(f"\nEnhanced dataset saved to: {output_file}")
+    # Save the enhanced dataset instead of just the cleaned one
+    output_file = processed_dir / 'enhanced_sales_data.csv'
+    df_enhanced.to_csv(output_file, index=False)
+    print(f"\nEnhanced dataset saved to: {output_file}")
         
 def main():
     """Main execution function"""
