@@ -123,6 +123,11 @@ def run_phase2():
     print("=" * 60)
     print("Enhancing sales data with supplier information...")
 
+  # Paths
+    data_dir = project_root / 'utils'
+    processed_dir = data_dir / 'processed'
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
     try:
         df_enhanced = deu.run_supplier_enrichment(
             df_clean,
