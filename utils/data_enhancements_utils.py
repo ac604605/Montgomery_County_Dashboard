@@ -7,10 +7,6 @@ Works in both EC2 and Docker environments
 import sys
 from pathlib import Path
 
-# Determine project root (one level above 'utils')
-project_root = Path(__file__).parent
-sys.path.append(str(project_root))
-
 import pandas as pd
 import numpy as np
 from typing import Optional, Dict, List, Union, Tuple, Any
