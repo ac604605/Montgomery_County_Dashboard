@@ -18,10 +18,10 @@ sys.path.append(str(project_root / 'utils'))
 # Import the data enhancement utilities
 try:
     import data_enhancement_utils as deu
-    print("✓ Successfully imported data_enhancement_utils")
+    print(" Successfully imported data_enhancement_utils")
 except ImportError as e:
-    print(f"❌ Error importing data_enhancement_utils: {e}")
-    print(f"Make sure data_enhancement_utils.py is in the utils/ directory")
+    print(f" Error importing data_enhancement_utils: {e}")
+    print(f"Make sure data_enhancement_utils.py is in the utils directory")
     sys.exit(1)
 
 def load_cached_data(data_dir: Path):
@@ -30,11 +30,11 @@ def load_cached_data(data_dir: Path):
     
     # Check if cached files exist
     required_files = {
-        'sales_transactions.csv': 'Warehouse_and_Retail_Sales',
-        'distributors.csv': 'Distributors_Virginia_Three_Main', 
-        'wine_producers.csv': 'wine_producers',
-        'wine_reviews.csv': 'Wine_Review_Data',
-        'suppliers_fixed.csv': 'Suppliers_Fixed'
+        'Warehouse_and_Retail_Sales': 'Warehouse_and_Retail_Sales',  # Excel file
+        'Distributors_Virginia_Three_Main': 'Distributors_Virginia_Three_Main', 
+        'wine_producers': 'wine_producers',
+        'winemag-data-130k-v2': 'Wine_Review_Data',
+        'Suppliers_Importers_Retailers': 'Suppliers_Fixed'
     }
     
     datasets = {}
@@ -42,16 +42,16 @@ def load_cached_data(data_dir: Path):
     for filename, dataset_name in required_files.items():
         file_path = data_dir / filename
         if not file_path.exists():
-            print(f"❌ Required file not found: {file_path}")
+            print(f" Required file not found: {file_path}")
             print("Please run scripts/load_github_data.py first")
             return None
         
         try:
-            df = pd.read_csv(file_path)
+            df = pd.read_excel(file_path)
             datasets[dataset_name] = df
-            print(f"✓ Loaded {dataset_name}: {df.shape[0]:,} rows × {df.shape[1]} cols")
+            print(f" Loaded {dataset_name}: {df.shape[0]:,} rows × {df.shape[1]} cols")
         except Exception as e:
-            print(f"❌ Error loading {filename}: {e}")
+            print(f" Error loading {filename}: {e}")
             return None
     
     return datasets
@@ -59,7 +59,7 @@ def load_cached_data(data_dir: Path):
 def run_phase2_cleaning():
     """Run Phase 2 data cleaning pipeline"""
     
-    print("🧹 PHASE 2: DATA CLEANING AND STANDARDIZATION")
+    print(" PHASE 2: DATA CLEANING AND STANDARDIZATION")
     print("=" * 60)
     
     # Set up paths
@@ -76,7 +76,7 @@ def run_phase2_cleaning():
     # Get the sales data (main dataset for cleaning)
     sales_data = datasets['Warehouse_and_Retail_Sales']
     
-    print(f"\n📊 Starting with sales dataset:")
+    print(f"\n Starting with sales dataset:")
     print(f"Shape: {sales_data.shape}")
     print(f"Columns: {list(sales_data.columns)}")
     
@@ -94,7 +94,7 @@ def run_phase2_cleaning():
         )
         
         # Show cleaning results  
-        print(f"\n🎯 CLEANING RESULTS:")
+        print(f"\n CLEANING RESULTS:")
         print(f"   Original: {cleaning_report['original_shape']}")
         print(f"   Cleaned:  {cleaning_report['final_shape']}")
         print(f"   Retention: {cleaning_report['summary']['data_retention_pct']:.1f}%")
@@ -102,7 +102,7 @@ def run_phase2_cleaning():
         # Save cleaned dataset
         output_file = processed_dir / 'cleaned_sales_data.csv'
         df_clean.to_csv(output_file, index=False)
-        print(f"\n💾 Cleaned dataset saved to: {output_file}")
+        print(f"\n Cleaned dataset saved to: {output_file}")
         print(f"   File size: {output_file.stat().st_size / 1024**2:.1f} MB")
         
         # Save cleaning report
@@ -119,22 +119,22 @@ def run_phase2_cleaning():
             for improvement in cleaning_report.get('data_quality_improvements', []):
                 f.write(f"- {improvement}\n")
         
-        print(f"📋 Cleaning report saved to: {report_file}")
+        print(f" Cleaning report saved to: {report_file}")
         
         # Quick validation of cleaned data
-        print(f"\n🔍 VALIDATION:")
-        print(f"✓ Final dataset shape: {df_clean.shape}")
-        print(f"✓ Item types: {df_clean['ITEM TYPE'].value_counts().to_dict()}")
-        print(f"✓ Missing suppliers: {df_clean['SUPPLIER'].isnull().sum()}")
-        print(f"✓ Numeric item codes: {pd.api.types.is_numeric_dtype(df_clean['ITEM CODE'])}")
+        print(f"\n VALIDATION:")
+        print(f" Final dataset shape: {df_clean.shape}")
+        print(f" Item types: {df_clean['ITEM TYPE'].value_counts().to_dict()}")
+        print(f" Missing suppliers: {df_clean['SUPPLIER'].isnull().sum()}")
+        print(f" Numeric item codes: {pd.api.types.is_numeric_dtype(df_clean['ITEM CODE'])}")
         
-        print(f"\n✅ PHASE 2 COMPLETE!")
+        print(f"\n PHASE 2 COMPLETE!")
         print(f"Cleaned dataset ready for next steps at: {output_file}")
         
         return True
         
     except Exception as e:
-        print(f"\n❌ ERROR during cleaning pipeline: {e}")
+        print(f"\n ERROR during cleaning pipeline: {e}")
         print(f"Check that your data has the expected columns:")
         print(f"Required: SUPPLIER, ITEM CODE, ITEM TYPE, ITEM DESCRIPTION")
         return False
@@ -151,13 +151,13 @@ def main():
     success = run_phase2_cleaning()
     
     if success:
-        print("\n🎉 Phase 2 completed successfully!")
+        print("\n Phase 2 completed successfully!")
         print("Next steps:")
         print("- Cleaned dataset is ready for further processing")
         print("- You can now add fuzzy matching, column additions, etc.")
         print("- Data is cached for future incremental updates")
     else:
-        print("\n💥 Phase 2 failed - check error messages above")
+        print("\n Phase 2 failed - check error messages above")
         return 1
     
     return 0
