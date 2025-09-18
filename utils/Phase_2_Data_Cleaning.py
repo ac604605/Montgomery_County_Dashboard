@@ -14,6 +14,7 @@ import os
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / 'data'))
 
 # Import the data enhancement utilities
 try:
