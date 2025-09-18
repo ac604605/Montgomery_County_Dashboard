@@ -33,7 +33,7 @@ def load_cached_data(data_dir: Path):
     required_files = {
         'Warehouse_and_Retail_Sales.csv': 'Warehouse_and_Retail_Sales',  # Excel file
         'Distributors_Virginia_Three_Main.csv': 'Distributors_Virginia_Three_Main', 
-        'wine_producers': 'wine_producers.csv',
+        'wine_producers.csv': 'wine_producers',
         'winemag-data-130k-v2.csv': 'Wine_Review_Data',
         'Suppliers_Importers_Retailers.csv': 'Suppliers_Fixed'
     }
