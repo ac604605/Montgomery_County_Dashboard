@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 # Determine project root (one level above 'utils')
-project_root = Path(__file__).parent
+project_root = Path(__file__).parent.parent
 
 import pandas as pd
 import sys
