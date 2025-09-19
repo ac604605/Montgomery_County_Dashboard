@@ -766,7 +766,7 @@ def run_supplier_enrichment(sales_df: pd.DataFrame,
                     'matched_name': exact_match.iloc[0]['Trade Name'],
                     'score': 1.0,
                     'report_type': exact_match.iloc[0]['Report Type'],
-                    'license_id': exact_match.iloc[0]['License_ID']
+                    'license_id': exact_match.iloc[0]['License ID']
                 }
             
             # Step 2: Normalized match (if no exact match)
@@ -777,7 +777,7 @@ def run_supplier_enrichment(sales_df: pd.DataFrame,
                         'matched_name': norm_match.iloc[0]['Trade Name'],
                         'score': 0.9,
                         'report_type': norm_match.iloc[0]['Report Type'],
-                        'license_id': norm_match.iloc[0]['License_ID']
+                        'license_id': norm_match.iloc[0]['License ID']
                     }
             
             # Step 3: Fuzzy matching (only if needed)
@@ -792,7 +792,7 @@ def run_supplier_enrichment(sales_df: pd.DataFrame,
                             'matched_name': trade_name,
                             'score': score,
                             'report_type': supplier_row['Report Type'],
-                            'license_id': supplier_row['License_ID']
+                            'license_id': supplier_row['License ID']
                         }
             
             # Store in cache (even if no match found)
