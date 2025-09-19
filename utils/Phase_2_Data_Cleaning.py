@@ -21,7 +21,7 @@ import importlib
 try:
     import data_enhancements_utils as deu
     importlib.reload(deu)  # Reload if module has changed
-    print("✓ Successfully imported data_enhancement_utils")
+    print(" Successfully imported data_enhancement_utils")
 except ImportError as e:
     print(f"Error importing data_enhancement_utils: {e}")
     print("Make sure data_enhancement_utils.py is in the utils directory")
@@ -115,7 +115,7 @@ def run_phase2():
         print(f"Cleaning report saved to: {report_file}")
 
     except Exception as e:
-        print(f"\nERROR during cleaning pipeline: {e}")
+        print(f"\nERROR during cleaning pipeline")
         return None
 
     # Phase 2B: Supplier Enrichment
