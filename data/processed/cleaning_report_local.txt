@@ -1,0 +1,13 @@
+DATA CLEANING REPORT
+==================================================
+
+Original shape: (307645, 9)
+Final shape: (230053, 9)
+Data retention: 74.8%
+Steps completed: Missing supplier removal, Pattern analysis, Item code standardization, Numeric conversion, Item type filtering
+
+Data Quality Improvements:
+-  Standardized non-numeric item codes
+-  Converted item codes to numeric type
+-  Removed missing supplier data
+-  Filtered to business-relevant categories: ['WINE', 'BEER']
