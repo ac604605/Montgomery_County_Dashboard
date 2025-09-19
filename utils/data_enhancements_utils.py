@@ -664,45 +664,184 @@ def run_supplier_enrichment(sales_df: pd.DataFrame,
     return enriched_df
 
 
-# Example usage and testing
-def test_supplier_enrichment():
-    """Test function to verify supplier enrichment works"""
+def run_supplier_enrichment(sales_df: pd.DataFrame, 
+                           suppliers_df: pd.DataFrame, 
+                           test_mode: bool = False,
+                           match_threshold: float = 0.7,
+                           verbose: bool = True) -> pd.DataFrame:
+    """
+    OPTIMIZED supplier enrichment with persistent caching and multi-step matching.
+    """
+    from difflib import SequenceMatcher
+    import pickle
+    import os
+    import re
     
-    # Sample sales data
-    sales_sample = pd.DataFrame({
-        'SUPPLIER': [
-            'REPUBLIC NATIONAL DISTRIBUTING CO',
-            'PWSWN INC', 
-            'RELIABLE CHURCHILL LLLP',
-            'LANTERNA DISTRIBUTORS INC',
-            'KYSELA PERE ET FILS LTD'
-        ],
-        'ITEM_CODE': [100009, 100024, 1001, 100145, 100641],
-        'ITEM_TYPE': ['WINE', 'WINE', 'BEER', 'WINE', 'WINE']
-    })
+    if verbose:
+        print("="*60)
+        print("OPTIMIZED SUPPLIER ENRICHMENT - FUZZY MATCHING")
+        print("="*60)
     
-    # Sample suppliers data  
-    suppliers_sample = pd.DataFrame({
-        'License_ID': ['085631', '123456', '789012'],
-        'Trade Name': [
-            'REPUBLIC NATIONAL DISTRIBUTING CO LLC',
-            'PWSWN INCORPORATED', 
-            'KYSELA PERE ET FILS LTD'
-        ],
-        'Report Type': [
-            'Virginia Importers and Breweries',
-            'Wholesale Wine Distributors',
-            'Wholesale Wine Distributors'
-        ]
-    })
+    # Load persistent cache
+    cache_file = 'supplier_match_cache.pkl'
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'rb') as f:
+                supplier_cache = pickle.load(f)
+            if verbose:
+                print(f"Loaded {len(supplier_cache)} cached supplier matches")
+        except:
+            supplier_cache = {}
+    else:
+        supplier_cache = {}
     
-    # Run enrichment
-    result = run_supplier_enrichment(sales_sample, suppliers_sample, test_mode=True)
+    # Helper function to normalize company names
+    def normalize_company_name(name):
+        if pd.isna(name):
+            return ""
+        name = str(name).strip().upper()
+        # Remove common business suffixes
+        suffixes = ['LLC', 'INC', 'INCORPORATED', 'CO', 'COMPANY', 'CORP', 'CORPORATION', 
+                   'LTD', 'LIMITED', 'LP', 'LLP', 'LLLP']
+        for suffix in suffixes:
+            # Remove suffix at end with word boundaries
+            name = re.sub(f'\\b{suffix}\\b$', '', name).strip()
+        return name
     
-    print(f"\nTEST RESULTS:")
-    print(result[['SUPPLIER', 'MATCHED_SUPPLIER_NAME', 'SUPPLIER_MATCH_SCORE', 'SUPPLIER_REPORT_TYPE']].head())
+    # Create copy of sales data
+    enriched_df = sales_df.copy()
     
-    return result
+    if test_mode:
+        enriched_df = enriched_df.head(1000)
+        if verbose:
+            print(f"TEST MODE: Processing only {len(enriched_df)} rows")
+    
+    # Prepare supplier lookup data
+    suppliers_lookup = suppliers_df.copy()
+    suppliers_lookup['Trade Name'] = suppliers_lookup['Trade Name'].astype(str).str.strip().str.upper()
+    suppliers_lookup['Trade_Name_Normalized'] = suppliers_lookup['Trade Name'].apply(normalize_company_name)
+    suppliers_lookup = suppliers_lookup.dropna(subset=['Trade Name'])
+    
+    if verbose:
+        print(f"Sales data: {len(enriched_df):,} rows")
+        print(f"Suppliers data: {len(suppliers_lookup):,} entries")
+        unique_suppliers = enriched_df['SUPPLIER'].nunique()
+        print(f"Unique suppliers in sales: {unique_suppliers:,}")
+    
+    # Initialize new columns
+    enriched_df['MATCHED_SUPPLIER_NAME'] = ''
+    enriched_df['SUPPLIER_MATCH_SCORE'] = 0.0
+    enriched_df['SUPPLIER_REPORT_TYPE'] = ''
+    enriched_df['SUPPLIER_LICENSE_ID'] = ''
+    
+    # Get unique suppliers to avoid redundant matching
+    unique_suppliers = enriched_df['SUPPLIER'].dropna().unique()
+    new_matches = 0
+    cached_matches = 0
+    
+    if verbose:
+        print(f"Processing {len(unique_suppliers):,} unique suppliers...")
+    
+    # Process each unique supplier
+    for i, supplier in enumerate(unique_suppliers):
+        if pd.isna(supplier) or supplier == '':
+            continue
+        
+        # Check cache first
+        if supplier in supplier_cache:
+            cached_matches += 1
+            match_info = supplier_cache[supplier]
+        else:
+            # Multi-step matching process
+            supplier_clean = str(supplier).strip().upper()
+            supplier_normalized = normalize_company_name(supplier_clean)
+            
+            match_info = None
+            best_score = 0.0
+            
+            # Step 1: Exact match
+            exact_match = suppliers_lookup[suppliers_lookup['Trade Name'] == supplier_clean]
+            if not exact_match.empty:
+                match_info = {
+                    'matched_name': exact_match.iloc[0]['Trade Name'],
+                    'score': 1.0,
+                    'report_type': exact_match.iloc[0]['Report Type'],
+                    'license_id': exact_match.iloc[0]['License_ID']
+                }
+            
+            # Step 2: Normalized match (if no exact match)
+            if match_info is None and supplier_normalized:
+                norm_match = suppliers_lookup[suppliers_lookup['Trade_Name_Normalized'] == supplier_normalized]
+                if not norm_match.empty:
+                    match_info = {
+                        'matched_name': norm_match.iloc[0]['Trade Name'],
+                        'score': 0.9,
+                        'report_type': norm_match.iloc[0]['Report Type'],
+                        'license_id': norm_match.iloc[0]['License_ID']
+                    }
+            
+            # Step 3: Fuzzy matching (only if needed)
+            if match_info is None:
+                for _, supplier_row in suppliers_lookup.iterrows():
+                    trade_name = supplier_row['Trade Name']
+                    score = SequenceMatcher(None, supplier_clean, trade_name).ratio()
+                    
+                    if score > best_score and score >= match_threshold:
+                        best_score = score
+                        match_info = {
+                            'matched_name': trade_name,
+                            'score': score,
+                            'report_type': supplier_row['Report Type'],
+                            'license_id': supplier_row['License_ID']
+                        }
+            
+            # Store in cache (even if no match found)
+            if match_info is None:
+                match_info = {'matched_name': '', 'score': 0.0, 'report_type': '', 'license_id': ''}
+            
+            supplier_cache[supplier] = match_info
+            new_matches += 1
+        
+        # Apply match to dataframe (if score meets threshold)
+        if match_info['score'] >= match_threshold:
+            mask = enriched_df['SUPPLIER'] == supplier
+            enriched_df.loc[mask, 'MATCHED_SUPPLIER_NAME'] = match_info['matched_name']
+            enriched_df.loc[mask, 'SUPPLIER_MATCH_SCORE'] = match_info['score']
+            enriched_df.loc[mask, 'SUPPLIER_REPORT_TYPE'] = match_info['report_type']
+            enriched_df.loc[mask, 'SUPPLIER_LICENSE_ID'] = match_info['license_id']
+        
+        # Progress indicator
+        if verbose and (i + 1) % 100 == 0:
+            print(f"Processed {i + 1:,}/{len(unique_suppliers):,} suppliers")
+    
+    # Save updated cache
+    try:
+        with open(cache_file, 'wb') as f:
+            pickle.dump(supplier_cache, f)
+        if verbose:
+            print(f"Saved cache with {len(supplier_cache)} entries")
+    except Exception as e:
+        if verbose:
+            print(f"Warning: Could not save cache: {e}")
+    
+    # Results summary
+    high_confidence_matches = (enriched_df['SUPPLIER_MATCH_SCORE'] >= match_threshold).sum()
+    
+    if verbose:
+        print(f"\nENRICHMENT COMPLETE:")
+        print(f"✓ New matches computed: {new_matches}")
+        print(f"✓ Cached matches used: {cached_matches}")
+        print(f"✓ High confidence matches (≥{match_threshold}): {high_confidence_matches:,}")
+        
+        # Show report type distribution
+        if high_confidence_matches > 0:
+            print(f"\nReport Type Distribution (high confidence matches):")
+            high_conf_mask = enriched_df['SUPPLIER_MATCH_SCORE'] >= match_threshold
+            report_types = enriched_df[high_conf_mask]['SUPPLIER_REPORT_TYPE'].value_counts()
+            for report_type, count in report_types.head(5).items():
+                print(f"  {report_type}: {count:,}")
+    
+    return enriched_df
 
 # ================================
 # USAGE EXAMPLES AND TESTING
